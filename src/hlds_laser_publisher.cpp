@@ -46,7 +46,7 @@ LFCDLaser::LFCDLaser(const std::string& port, uint32_t baud_rate, boost::asio::i
   serial_.set_option(boost::asio::serial_port_base::baud_rate(baud_rate_));
 
   // Below command is not required after firmware upgrade (2017.10)
-  boost::asio::write(serial_, boost::asio::buffer("b", 1));  // start motor
+  // boost::asio::write(serial_, boost::asio::buffer("b", 1));  // start motor
 }
 
 LFCDLaser::~LFCDLaser()
@@ -68,7 +68,13 @@ void LFCDLaser::poll(sensor_msgs::LaserScan::Ptr scan)
   while (!shutting_down_ && !got_scan)
   {
     // Wait until first data sync of frame: 0xFA, 0xA0
-    boost::asio::read(serial_, boost::asio::buffer(&raw_bytes[start_count],1));
+    try{
+      boost::asio::read(serial_, boost::asio::buffer(&raw_bytes[start_count],1));
+    }catch (boost::system::system_error ex)
+    {
+      // if(ex == boost::asio::read::eof)
+      continue;
+    }
 
     if(start_count == 0)
     {
@@ -83,10 +89,16 @@ void LFCDLaser::poll(sensor_msgs::LaserScan::Ptr scan)
       {
         start_count = 0;
 
-        // Now that entire start sequence has been found, read in the rest of the message
+        ROS_INFO("// Now that entire start sequence has been found, read in the rest of the message");
         got_scan = true;
-
-        boost::asio::read(serial_,boost::asio::buffer(&raw_bytes[2], 2518));
+        try{
+          boost::asio::read(serial_,boost::asio::buffer(&raw_bytes[2], 2518));
+        }
+        catch (boost::system::system_error ex)
+        {
+          // if(ex == boost::asio::read::eof)
+          continue;
+        }
 
         scan->angle_increment = (2.0*M_PI/360.0);
         scan->angle_min = 0.0;
