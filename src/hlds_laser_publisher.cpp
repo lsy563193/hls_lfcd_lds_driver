@@ -794,9 +794,9 @@ int main(int argc, char **argv)
 
   std_msgs::UInt16 rpms;
 
-  // priv_nh.param("port", port, std::string("/dev/ttyUSB0"));
-  // priv_nh.param("baud_rate", baud_rate, 230400);
-  // priv_nh.param("frame_id", frame_id, std::string("laser"));
+  priv_nh.param("port", port, std::string("/dev/ttyUSB0"));
+  priv_nh.param("baud_rate", baud_rate, 230400);
+  priv_nh.param("frame_id", frame_id, std::string("laser"));
 
   pthread_t scan_ctrl_thread_id;
 	int8_t tmp_ret = pthread_create(&scan_ctrl_thread_id, NULL, scan_ctrl_routine, NULL);
