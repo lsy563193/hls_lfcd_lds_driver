@@ -3,21 +3,37 @@
 ################################################################################
 cmake_minimum_required(VERSION 2.8.3)
 project(hls_lfcd_lds_driver)
+set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 
 ################################################################################
 # Find catkin packages and libraries for catkin and system dependencies
 ################################################################################
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  rosconsole
   std_msgs
+  message_generation
   sensor_msgs
+  cmake_modules
+  tf
 )
 
 find_package(Boost REQUIRED)
 
+find_package(Eigen REQUIRED)
+
 ################################################################################
 # Setup for python modules and scripts
 ################################################################################
+add_service_files(FILES
+	SetLidar.srv	
+)
+
+add_message_files(FILES
+	scan_ctrl.msg
+)
+
+Generate_messages(DEPENDENCIES std_msgs sensor_msgs)
 
 ################################################################################
 # Declare ROS messages, services and actions
@@ -32,7 +48,10 @@ find_package(Boost REQUIRED)
 ################################################################################
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS roscpp std_msgs sensor_msgs
+  CATKIN_DEPENDS roscpp 
+  std_msgs 
+  sensor_msgs 
+  std_srvs
   DEPENDS Boost
 )
 
