@@ -48,7 +48,7 @@
 
 
 
-#define LIDAR_BLOCK_RANGE_ENABLE (1)
+#define LIDAR_BLOCK_RANGE_ENABLE (0)
 
 //#if LIDAR_BLOCK_RANGE_ENABLE
 //#define _FOC (359) //FIRST obstical col
@@ -754,6 +754,15 @@ void LFCDLaser::poll(sensor_msgs::LaserScan::Ptr scan)
               // Last two bytes represent the uncertanty or intensity, might also be pixel area of target...
               // uint16_t intensity = (byte3 << 8) + byte2;
               uint16_t range = (byte3 << 8) + byte2;
+							int index_convert;
+							if(index >= 0 && index < 180)
+							{
+								index_convert = 179 - index;
+							}
+							else
+							{
+								index_convert = 180 - index >= 0 ? 0 : 540 - index;
+							}
               #if LIDAR_BLOCK_RANGE_ENABLE
               				if (block_angle_1 != -1 && check_within_range(index,block_angle_1, block_range))
               					scan->ranges[359-index] = std::numeric_limits<float>::infinity();
@@ -765,9 +774,9 @@ void LFCDLaser::poll(sensor_msgs::LaserScan::Ptr scan)
               					scan->ranges[359-index] = range/1000.0;
               #else
               				// scan->ranges[node_count-1-i] = read_value;
-                      scan->ranges[359-index] = range / 1000.0;
+                      scan->ranges[index_convert] = range / 1000.0;
               #endif
-              scan->intensities[359-index] = intensity;
+              scan->intensities[index_convert] = intensity;
             }
           }
         }
