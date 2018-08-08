@@ -532,44 +532,27 @@ void update_compensate_lidarMatrix(sensor_msgs::LaserScan lidarScanData_)
 
 bool lidar_motor_ctrl(hls_lfcd_lds_driver::SetLidar::Request &req, hls_lfcd_lds_driver::SetLidar::Response &res)
 {
+	if (!is_instance)
+	{
+		res.message = "drive not ready";
+		return false;
+	}
 	if (req.switch_status == true)
 	{
-		if (!is_instance)
-		{
-			res.message = "drive not ready";
-			return false;
-		}
-		ROS_INFO("\033[1m"
-				 "hls_lfcd_lds_driver/node.cpp. %s %d: Start Motor"
-				 "\033[0m",
-				 __FUNCTION__, __LINE__);
-		res.message = "Driver start command received.";
 		if (lidar_status == OFF)
 		{
 			motor_start_flag = true;
 			motor_stop_flag = false;
 		}
-		res.success = true;
-		lidar_status = ON;
 	}
 	else if (req.switch_status == false)
 	{
-		if (!is_instance)
-		{
-			res.message = "drive not ready";
-			return false;
-		}
-		ROS_INFO("\033[1m"
-				 "hls_lfcd_lds_driver/node.cpp. %s %d: Stop Motor"
-				 "\033[0m",
-				 __FUNCTION__, __LINE__);
-		res.message = "Driver stop command received.";
 		motor_stop_flag = true;
 		motor_start_flag = false;
-		res.success = true;
-		lidar_status = OFF;
-		//		ROS_INFO("%s,%d Update parameters finished",__FUNCTION__,__LINE__);
 	}
+	res.message = "Driver ommand received:"  + (req.switch_status ? "true":"false");
+	res.success = true;
+	lidar_status = req.switch_status;
 	return true;
 }
 
