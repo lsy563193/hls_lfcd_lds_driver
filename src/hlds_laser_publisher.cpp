@@ -387,7 +387,7 @@ void publish_scan_compensate(Eigen::MatrixXd lidar_matrix)
 		if (scan_msg.ranges[i] == 0 || scan_msg.ranges[i] > 10)
 			scan_msg.ranges[i] = std::numeric_limits<float>::infinity();
 	}
-	scan_compensate_pub.publish(scan_msg);
+	// scan_compensate_pub.publish(scan_msg);
 }
 void update_compensate_lidarMatrix(sensor_msgs::LaserScan lidarScanData_)
 {
@@ -824,7 +824,9 @@ void LFCDLaser::poll(sensor_msgs::LaserScan::Ptr scan)
 							// uint16_t intensity = (byte3 << 8) + byte2;
 							uint16_t range = (byte3 << 8) + byte2;
 #if LIDAR_BLOCK_RANGE_ENABLE
-							if (block_angle_1 != -1 && check_within_range(index, block_angle_1, block_range))
+							if(range / 1000.0 < scan->range_min || range / 1000.0 > scan->range_max)
+								scan->ranges[index_convert] = std::numeric_limits<float>::infinity();
+							else if (block_angle_1 != -1 && check_within_range(index, block_angle_1, block_range))
 								scan->ranges[index_convert] = std::numeric_limits<float>::infinity();
 							else if (block_angle_2 != -1 && check_within_range(index, block_angle_2, block_range))
 								scan->ranges[index_convert] = std::numeric_limits<float>::infinity();
