@@ -811,24 +811,32 @@ void LFCDLaser::poll(sensor_msgs::LaserScan::Ptr scan)
 
 							// Remaining bits are the range in mm
 							uint16_t intensity = (byte1 << 8) + byte0;
-
+							int index_convert;
+							if (index >= 0 && index < 180)
+							{
+								index_convert = 179 - index;
+							}
+							else
+							{
+								index_convert = 180 - index >= 0 ? 0 : 540 - index;
+							}
 							// Last two bytes represent the uncertanty or intensity, might also be pixel area of target...
 							// uint16_t intensity = (byte3 << 8) + byte2;
 							uint16_t range = (byte3 << 8) + byte2;
 #if LIDAR_BLOCK_RANGE_ENABLE
 							if (block_angle_1 != -1 && check_within_range(index, block_angle_1, block_range))
-								scan->ranges[359 - index] = std::numeric_limits<float>::infinity();
+								scan->ranges[index_convert] = std::numeric_limits<float>::infinity();
 							else if (block_angle_2 != -1 && check_within_range(index, block_angle_2, block_range))
-								scan->ranges[359 - index] = std::numeric_limits<float>::infinity();
+								scan->ranges[index_convert] = std::numeric_limits<float>::infinity();
 							else if (block_angle_3 != -1 && check_within_range(index, block_angle_3, block_range))
-								scan->ranges[359 - index] = std::numeric_limits<float>::infinity();
+								scan->ranges[index_convert] = std::numeric_limits<float>::infinity();
 							else
-								scan->ranges[359 - index] = range / 1000.0;
+								scan->ranges[index_convert] = range / 1000.0;
 #else
 							// scan->ranges[node_count-1-i] = read_value;
-							scan->ranges[359 - index] = range / 1000.0;
+							scan->ranges[index_convert - index] = range / 1000.0;
 #endif
-							scan->intensities[359 - index] = intensity;
+							scan->intensities[index_convert] = intensity;
 						}
 					}
 				}
@@ -972,7 +980,7 @@ int main(int argc, char **argv)
 		sin(tmp_theta), cos(tmp_theta), LIDAR_OFFSET_Y,
 		0, 0, 1;
 
-	// pm_try_power_down();
+	pm_try_power_down();
 
 	boost::asio::io_service io;
 
@@ -995,11 +1003,11 @@ int main(int argc, char **argv)
 
 			start_lidar();
 
-			// if (lidar_status == OFF)
+			if (lidar_status == OFF)
 			{
-				// usleep(20000);
+				usleep(20000);
 							// printf("%s %d: continue.\n", __FUNCTION__, __LINE__);
-				// continue;
+				continue;
 			}
 
 			sensor_msgs::LaserScan::Ptr scan(new sensor_msgs::LaserScan);
