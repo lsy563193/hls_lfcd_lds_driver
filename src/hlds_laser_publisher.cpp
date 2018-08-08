@@ -550,7 +550,8 @@ bool lidar_motor_ctrl(hls_lfcd_lds_driver::SetLidar::Request &req, hls_lfcd_lds_
 		motor_stop_flag = true;
 		motor_start_flag = false;
 	}
-	res.message = "Driver ommand received:"  + (req.switch_status ? "true":"false");
+	res.message = "Driver ommand received:";
+	res.message += (req.switch_status ? "true":"false");
 	res.success = true;
 	lidar_status = req.switch_status;
 	return true;
@@ -933,11 +934,10 @@ int main(int argc, char **argv)
 	bool inverted = false;
 	bool angle_compensate = true;
 
-	ros::NodeHandle nh;
 	// ros::Publisher scan_linear_pub = nh.advertise<sensor_msgs::LaserScan>("scanLinear", 1000);
-	ros::Publisher scan_original_pub = nh.advertise<sensor_msgs::LaserScan>("scanOriginal", 1000);
-	scan_compensate_pub = nh.advertise<sensor_msgs::LaserScan>("scanCompensate", 1000);
-	point_marker_pub = nh.advertise<visualization_msgs::Marker>("lidarPoint", 1000);
+	ros::Publisher scan_original_pub = n.advertise<sensor_msgs::LaserScan>("scanOriginal", 1000);
+	scan_compensate_pub = n.advertise<sensor_msgs::LaserScan>("scanCompensate", 1000);
+	point_marker_pub = n.advertise<visualization_msgs::Marker>("lidarPoint", 1000);
 	ros::NodeHandle nh_private("~");
 	nh_private.param<bool>("inverted", inverted, false);
 	nh_private.param<bool>("angle_compensate", angle_compensate, true);
@@ -953,14 +953,11 @@ int main(int argc, char **argv)
 
 	//nh_private.param<bool>("publish_when_turn", publish_when_turn, true);
 	nh_private.param<int>("delay_when_republish", delay_when_republish, 1);
-	ros::Subscriber scan_ctrl_sub;
-	ros::Subscriber odom_sub;
-	scan_ctrl_sub = nh.subscribe("/scan_ctrl", 1, &scan_ctrl_cb);
-	odom_sub = nh.subscribe("/odom", 1, &odom_cb);
-
-	ros::ServiceServer motor_service = nh.advertiseService("lidar_motor_ctrl", lidar_motor_ctrl);
+	auto scan_ctrl_sub = n.subscribe("/scan_ctrl", 1, &scan_ctrl_cb);
+	auto odom_sub = n.subscribe("/odom", 1, &odom_cb);
+	auto motor_service = n.advertiseService("lidar_motor_ctrl", lidar_motor_ctrl);
 	ROS_WARN("lidar_motor_ctrl service is up.");
-	double tmp_theta = LIDAR_OFFSET_THETA * M_PI / 180.0;
+	auto tmp_theta = LIDAR_OFFSET_THETA * M_PI / 180.0;
 	t_lidar_baselink << cos(tmp_theta), -sin(tmp_theta), LIDAR_OFFSET_X,
 		sin(tmp_theta), cos(tmp_theta), LIDAR_OFFSET_Y,
 		0, 0, 1;
