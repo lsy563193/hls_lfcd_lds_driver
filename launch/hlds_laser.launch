@@ -1,7 +1,19 @@
 <?xml version="1.0"?>
 <launch>
   <node pkg="hls_lfcd_lds_driver" type="hlds_laser_publisher" name="hlds_laser_publisher" output="screen">
-    <param name="port" value="/dev/ttyUSB0"/>
+    <param name="port" value="/dev/ttyS1"/>
     <param name="frame_id" value="laser"/>
+    <param name="baud_rate" type="int" value="230400"/>
+    <param name="laserGen" type="int" value="1"/>
+    <param name="inverted" type="bool" value="false"/>
+    <param name="angle_compensate" type="bool" value="true"/>
+    <param name="block_angle_1" type="int" value="8"/>
+    <param name="block_angle_2" type="int" value="127"/>
+    <param name="block_angle_3" type="int" value="249"/>
+    <param name="block_range" type="int" value="33"/>
+    <param name="LIDAR_OFFSET_X" type="double" value="0.031"/>
+    <param name="LIDAR_OFFSET_Y" type="double" value="0"/>
+    <param name="LIDAR_OFFSET_THETA" type="double" value="205"/>
+    <param name="delay_when_republish" type="int" value="0"/>
   </node>
 </launch>

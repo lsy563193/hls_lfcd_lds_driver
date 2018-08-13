@@ -5,6 +5,12 @@ cmake_minimum_required(VERSION 2.8.3)
 project(hls_lfcd_lds_driver)
 set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 
+FILE(GLOB Laser_SRC
+		src/dev/LFCDLaser.cpp
+		src/dev/LFCDLaserFirstGen.cpp
+		src/dev/LFCDLaserSecondGen.cpp
+		src/hlds_laser_publisher.cpp
+        )
 ################################################################################
 # Find catkin packages and libraries for catkin and system dependencies
 ################################################################################
@@ -64,18 +70,18 @@ include_directories(
   ${Boost_INCLUDE_DIRS}
 )
 
-add_executable(hlds_laser_publisher	src/hlds_laser_publisher.cpp)
+add_executable(hlds_laser_publisher	${Laser_SRC})
 add_dependencies(hlds_laser_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(hlds_laser_publisher ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
-add_executable(hlds_laser_segment_publisher	src/hlds_laser_segment_publisher.cpp)
-add_dependencies(hlds_laser_segment_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(hlds_laser_segment_publisher ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+#add_executable(hlds_laser_segment_publisher	src/hlds_laser_segment_publisher.cpp)
+#add_dependencies(hlds_laser_segment_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+#target_link_libraries(hlds_laser_segment_publisher ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 ################################################################################
 # Install
 ################################################################################
-install(TARGETS hlds_laser_publisher hlds_laser_segment_publisher
+install(TARGETS hlds_laser_publisher
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

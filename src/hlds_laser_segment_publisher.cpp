@@ -39,7 +39,7 @@
 
 namespace hls_lfcd_lds
 {
-LFCDLaser::LFCDLaser(boost::asio::io_service& io)
+LFCDLaser::LFCDLaserFirstGen(boost::asio::io_service& io)
 : serial_(io),
   shutting_down_(false)
 {
