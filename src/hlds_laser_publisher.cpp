@@ -1,37 +1,3 @@
-/*******************************************************************************
-* Copyright (c) 2016, Hitachi-LG Data Storage
-* Copyright (c) 2017, ROBOTIS
-* All rights reserved.
-*
-* Redistribution and use in source and binary forms, with or without
-* modification, are permitted provided that the following conditions are met:
-*
-* * Redistributions of source code must retain the above copyright notice, this
-*   list of conditions and the following disclaimer.
-*
-* * Redistributions in binary form must reproduce the above copyright notice,
-*   this list of conditions and the following disclaimer in the documentation
-*   and/or other materials provided with the distribution.
-*
-* * Neither the name of the copyright holder nor the names of its
-*   contributors may be used to endorse or promote products derived from
-*   this software without specific prior written permission.
-*
-* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-* DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-* FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-* DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-* SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-* CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-* OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-* OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*******************************************************************************/
-
-/* Authors: SP Kong, JH Yang */
-/* maintainer: Pyo */
-
 #include <ros/ros.h>
 #include <std_msgs/UInt16.h>
 #include <nav_msgs/Odometry.h>
@@ -113,8 +79,8 @@ void odom_cb(const nav_msgs::Odometry::ConstPtr &msg)
 				points_vec.push_back(point);
 		}
 		//publish scan
-		laser->publish_scan_compensate(laser->t_lidar_baselink.inverse() * laser->lidar_matrix);
-		laser->pubPointMarker(&points_vec);
+//		laser->publish_scan_compensate(laser->t_lidar_baselink.inverse() * laser->lidar_matrix);
+//		laser->pubPointMarker(&points_vec);
 		laser->scanXY_mutex_.unlock();
 	}
 }
@@ -130,25 +96,20 @@ int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "hlds_laser_publisher");
 	ros::NodeHandle n;
-	ros::NodeHandle priv_nh("~");
 	ros::NodeHandle nh_private("~");
 
 	std::string port = "/dev/ttyS1";
-	int baud_rate = 230400;
-	std::string frame_id = "laser";
-	boost::asio::io_service io;
-	priv_nh.param("port", port, std::string("/dev/ttyS1"));
-	priv_nh.param("baud_rate", baud_rate, 230400);
-	priv_nh.param("frame_id", frame_id, std::string("laser"));
+	nh_private.param("port", port, std::string("/dev/ttyS1"));
 	nh_private.param<int>("laserGen",laserGen,1);
-
+	boost::asio::io_service io;
+	boost::asio::serial_port serial(io,port);
 //Init for laser instance
 	try
 	{
 		if (laserGen == 1)
-			laser = new LFCDLaserFirstGen(port, baud_rate, io);
+			laser = new LFCDLaserFirstGen(&serial);
 		else if (laserGen == 2)
-			laser = new LFCDLaserSecondGen(port, baud_rate, io);
+			laser = new LFCDLaserSecondGen(&serial);
 		else
 			return -1;
 	}
@@ -182,6 +143,7 @@ int main(int argc, char **argv)
 	nh_private.param<double>("LIDAR_OFFSET_Y", laser->LIDAR_OFFSET_Y, 0);
 	nh_private.param<double>("LIDAR_OFFSET_THETA", laser->LIDAR_OFFSET_THETA, 0);
 	nh_private.param<int>("delay_when_republish", laser->delay_when_republish, 1);
+	nh_private.param("frame_id", laser->frame_id, std::string("laser"));
 #if LIDAR_BLOCK_RANGE_ENABLE
 	nh_private.param<int>("block_angle_1", laser->block_angle_1, -1);
 	nh_private.param<int>("block_angle_2", laser->block_angle_2, -1);
@@ -201,11 +163,10 @@ int main(int argc, char **argv)
 			if (laser->lidar_status == OFF)
 			{
 				usleep(20000);
-				// printf("%s %d: continue.\n", __FUNCTION__, __LINE__);
 				continue;
 			}
 			sensor_msgs::LaserScan::Ptr scan(new sensor_msgs::LaserScan);
-			scan->header.frame_id = frame_id;
+			scan->header.frame_id = laser->frame_id;
 			laser->poll(scan);
 			scan->header.stamp = ros::Time::now();
 

@@ -58,12 +58,13 @@ typedef struct
 } Double_Point;
 namespace hls_lfcd_lds
 {
-class LFCDLaser{
+class LFCDLaser
+{
 public:
-	LFCDLaser(){
-
-	}
-	~LFCDLaser(){
+	LFCDLaser() {}
+	~LFCDLaser() {
+		stopMotor();
+		lidar_pm_gpio('0');
 	}
 		/**
 	* @brief Close the driver down and prevent the polling loop from advancing
@@ -74,12 +75,12 @@ public:
 	* @param scan LaserScan message pointer to fill in with the scan. The caller is responsible for filling in the ROS timestamp and frame_id
 	*/
 	virtual void poll(sensor_msgs::LaserScan::Ptr scan) = 0;
-	virtual void startMotor() = 0;
-	virtual void stopMotor() = 0;
+	virtual void startMotor(){ boost::asio::write(*serial_, boost::asio::buffer("b", 1));}
+	virtual void stopMotor(){ boost::asio::write(*serial_, boost::asio::buffer("e", 1));}
 	virtual void read_false();
 	virtual bool read_success();
 	virtual void readWithTimeout
-						(boost::asio::serial_port& s, const boost::asio::mutable_buffers_1 & buffers, const boost::asio::deadline_timer::duration_type& expiry_time);
+						(boost::asio::serial_port* s, const boost::asio::mutable_buffers_1 & buffers, const boost::asio::deadline_timer::duration_type& expiry_time);
 	virtual int read_line(int fd, char *buf);
 	virtual bool lidar_pm_gpio(char cmd);
 	virtual void lidarDataFilter(const sensor_msgs::LaserScan lidarScanData, double delta);
@@ -91,16 +92,15 @@ public:
 	virtual bool check_within_range(int i, int start, int range);
 	virtual void pubPointMarker(std::vector<Double_Point> *point);
 
+	boost::asio::serial_port* serial_{NULL}; ///< @brief Actual serial port object for reading/writing to the LFCD Laser Scanner
 	uint16_t rpms; ///< @brief RPMS derived from the rpm bytes in an LFCD packet
-	std::string port_; ///< @brief The serial port the driver is attached to
 	uint32_t baud_rate_; ///< @brief The baud rate for the serial connection
-	bool shutting_down_; ///< @brief Flag for whether the driver is supposed to be shutting down or not
-	uint16_t motor_speed_; ///< @brief current motor speed as reported by the LFCD.
+	bool shutting_down_{false}; ///< @brief Flag for whether the driver is supposed to be shutting down or not uint16_t motor_speed_; ///< @brief current motor speed as reported by the LFCD.
 
 	double lidar_stuck_time = 0;
 	int lidar_stuck_count = 0;
 	bool skip_scan = false;
-	int delay;
+	int delay = 0;
 	int delay_when_republish = 1;
 	bool first_power_on{false};
 	bool restart_flag{false};
@@ -109,6 +109,7 @@ public:
 	std::vector<int> noiseNum;
 	double scan_update_time;
 	double odom_update_time;
+	std::string frame_id = "laser";
 
 #if LIDAR_BLOCK_RANGE_ENABLE
 	int block_angle_1;
@@ -129,42 +130,29 @@ public:
 	ros::Publisher scan_original_pub;
 	ros::Publisher scan_compensate_pub;
 };
+
 class LFCDLaserFirstGen : public LFCDLaser
 {
 public:
-	/**
-	* @brief Constructs a new LFCDLaser attached to the given serial port
-	* @param port The string for the serial port device to attempt to connect to, e.g. "/dev/ttyUSB0"
-	* @param baud_rate The baud rate to open the serial port at.
-	* @param io Boost ASIO IO Service to use when creating the serial port object
-	*/
-	LFCDLaserFirstGen(const std::string& port, uint32_t baud_rate, boost::asio::io_service& io);
-	~LFCDLaserFirstGen();
-
+	LFCDLaserFirstGen(boost::asio::serial_port* serial){
+		serial_ = serial;
+		baud_rate_ = 230400;
+		serial_->set_option(boost::asio::serial_port_base::baud_rate(baud_rate_));
+	}
+	~LFCDLaserFirstGen(){}
 	virtual void poll(sensor_msgs::LaserScan::Ptr scan);
-	virtual void startMotor(){ boost::asio::write(serial_, boost::asio::buffer("b", 1));}
-	virtual void stopMotor(){ boost::asio::write(serial_, boost::asio::buffer("e", 1));}
-
-private:
-	boost::asio::serial_port serial_; ///< @brief Actual serial port object for reading/writing to the LFCD Laser Scanner
 };
 
-class LFCDLaserSecondGen: public LFCDLaser{
+class LFCDLaserSecondGen: public LFCDLaser
+{
 public:
-	/**
-	* @brief Constructs a new LFCDLaser attached to the given serial port
-	* @param port The string for the serial port device to attempt to connect to, e.g. "/dev/ttyUSB0"
-	* @param baud_rate The baud rate to open the serial port at.
-	* @param io Boost ASIO IO Service to use when creating the serial port object
-	*/
-	LFCDLaserSecondGen(const std::string& port, uint32_t baud_rate, boost::asio::io_service& io);
+	LFCDLaserSecondGen(boost::asio::serial_port* serial) {
+		serial_ = serial;
+		baud_rate_ = 115200;
+		serial_->set_option(boost::asio::serial_port_base::baud_rate(baud_rate_));
+	};
 	~LFCDLaserSecondGen();
 	virtual void poll(sensor_msgs::LaserScan::Ptr scan);
-	virtual void startMotor(){ boost::asio::write(serial_, boost::asio::buffer("b", 1));}
-	virtual void stopMotor(){ boost::asio::write(serial_, boost::asio::buffer("e", 1));}
-
-private:
-	boost::asio::serial_port serial_; ///< @brief Actual serial port object for reading/writing to the LFCD Laser Scanner
 };
 }
 #endif

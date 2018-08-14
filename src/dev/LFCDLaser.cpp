@@ -3,23 +3,23 @@
 extern int laserGen;
 namespace hls_lfcd_lds{
 void LFCDLaser::readWithTimeout
-					(boost::asio::serial_port& s, const boost::asio::mutable_buffers_1 & buffers, const boost::asio::deadline_timer::duration_type& expiry_time)
+					(boost::asio::serial_port* s, const boost::asio::mutable_buffers_1 & buffers, const boost::asio::deadline_timer::duration_type& expiry_time)
 {
 	boost::optional<boost::system::error_code> timer_result;
-	boost::asio::deadline_timer timer(s.get_io_service());
+	boost::asio::deadline_timer timer(s->get_io_service());
 	timer.expires_from_now(expiry_time);
 	timer.async_wait([&timer_result] (const boost::system::error_code& error) { timer_result.reset(error); });
 
 	boost::optional<boost::system::error_code> read_result;
-	boost::asio::async_read(s, buffers, [&read_result] (const boost::system::error_code& error, size_t) { read_result.reset(error); });
+	boost::asio::async_read(*s, buffers, [&read_result] (const boost::system::error_code& error, size_t) { read_result.reset(error); });
 
-	s.get_io_service().reset();
-	while (s.get_io_service().run_one())
+	s->get_io_service().reset();
+	while (s->get_io_service().run_one())
 	{
 		if (read_result)
 			timer.cancel();
 		else if (timer_result)
-			s.cancel();
+			s->cancel();
 	}
 
 	if (*read_result)
@@ -255,7 +255,7 @@ void LFCDLaser::publish_scan_compensate(Eigen::MatrixXd lidar_matrix)
 		if (scan_msg.ranges[i] == 0 || scan_msg.ranges[i] > 10)
 			scan_msg.ranges[i] = std::numeric_limits<float>::infinity();
 	}
-	// scan_compensate_pub.publish(scan_msg);
+	scan_compensate_pub.publish(scan_msg);
 }
 
 void LFCDLaser::update_compensate_lidarMatrix(sensor_msgs::LaserScan lidarScanData_)
@@ -302,7 +302,7 @@ void LFCDLaser::update_compensate_lidarMatrix(sensor_msgs::LaserScan lidarScanDa
 
 void LFCDLaser::delay_pub(ros::Publisher *pub_linear, sensor_msgs::LaserScan::Ptr scan_msg)
 {
-//	ROS_INFO("%s %d: Published scan.", __FUNCTION__, __LINE__);
+//	ROS_INFO("%s %d: Published scan.Scan_ctrl:%d", __FUNCTION__, __LINE__,skip_scan);
 	if (skip_scan)
 	{
 		skip_scan = false;
@@ -313,8 +313,8 @@ void LFCDLaser::delay_pub(ros::Publisher *pub_linear, sensor_msgs::LaserScan::Pt
 		{
 //			ROS_INFO("Published scan2.");
 			pub_linear->publish(*scan_msg);
-			if (checkFresh(1, 2))
-				update_compensate_lidarMatrix(*scan_msg);
+//			if (checkFresh(1, 2))
+//				update_compensate_lidarMatrix(*scan_msg);
 			scan_update_time = ros::Time::now().toSec();
 		} else
 		{
@@ -330,10 +330,12 @@ bool LFCDLaser::checkFresh(int type, int time)
 	if (type == 1) // odom update
 	{
 		ret = ros::Time::now().toSec() - odom_update_time < time;
-	} else if (type == 2) // scan update
+	}
+	else if (type == 2) // scan update
 	{
 		ret = ros::Time::now().toSec() - scan_update_time < time;
-	} else
+	}
+	else
 	{
 		printf("input error,dont have this type");
 	}
@@ -413,7 +415,5 @@ void LFCDLaser::pubPointMarker(std::vector<Double_Point> *point)
 		point_marker_pub.publish(point_marker);
 	}
 }
-
-
 }
 

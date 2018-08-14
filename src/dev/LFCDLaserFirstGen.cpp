@@ -4,24 +4,8 @@
 #include "hls_lfcd_lds_driver/lfcd_laser.h"
 namespace hls_lfcd_lds
 {
-LFCDLaserFirstGen::LFCDLaserFirstGen(const std::string &port, uint32_t baud_rate, boost::asio::io_service &io)
-	: serial_(io, port)
-{
-	port_ = port;
-	baud_rate_ = baud_rate;
-	shutting_down_ = false;
-	serial_.set_option(boost::asio::serial_port_base::baud_rate(baud_rate_));
-}
-
-LFCDLaserFirstGen::~LFCDLaserFirstGen()
-{
-	stopMotor();
-	lidar_pm_gpio('0');
-}
-
 void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 {
-	uint8_t temp_char;
 	uint8_t start_count = 0;
 	bool got_scan = false;
 	boost::array<uint8_t, 2520> raw_bytes;
@@ -39,7 +23,7 @@ void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 		}
 		catch (boost::system::system_error ex)
 		{
-			ROS_ERROR("%d,An exception was thrown: %s", __FUNCTION__,ex.what());
+			ROS_ERROR("%d,An exception was thrown: %s", __LINE__,ex.what());
 			read_false();
 			continue;
 		}
@@ -56,16 +40,14 @@ void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 		{
 			if (raw_bytes[start_count] == 0xA0)
 			{
-
 				start_count = 0;
-				ROS_INFO("// Now that entire start sequence has been found, read in the rest of the message");
 				try
 				{
 					readWithTimeout(serial_, boost::asio::buffer(&raw_bytes[2], 2518),boost::posix_time::seconds( 1 ));
 				}
 				catch (boost::system::system_error ex)
 				{
-					ROS_ERROR("%d,An exception was thrown: %s", __FUNCTION__,ex.what());
+					ROS_ERROR("%d,An exception was thrown: %s", __LINE__,ex.what());
 					read_false();
 					start_count = 0;
 					continue;
