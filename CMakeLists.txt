@@ -6,10 +6,10 @@ project(hls_lfcd_lds_driver)
 set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
 
 FILE(GLOB Laser_SRC
-		src/dev/LFCDLaser.cpp
+		src/dev/Device.cpp
 		src/dev/LFCDLaserFirstGen.cpp
 		src/dev/LFCDLaserSecondGen.cpp
-		src/hlds_laser_publisher.cpp
+		src/main.cpp
         )
 ################################################################################
 # Find catkin packages and libraries for catkin and system dependencies
@@ -25,8 +25,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 find_package(Boost REQUIRED)
-
-find_package(Eigen REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 ################################################################################
 # Setup for python modules and scripts

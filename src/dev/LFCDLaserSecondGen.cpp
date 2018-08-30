@@ -1,9 +1,7 @@
 //
 // Created by pierre on 18-8-8.
 //
-#include "hls_lfcd_lds_driver/lfcd_laser.h"
-namespace hls_lfcd_lds
-{
+#include "SecondGenLaser.hpp"
 void LFCDLaserSecondGen::poll(sensor_msgs::LaserScan::Ptr scan)
 {
 	uint8_t start_count = 0;
@@ -11,24 +9,14 @@ void LFCDLaserSecondGen::poll(sensor_msgs::LaserScan::Ptr scan)
 	boost::array<uint8_t, 1980> raw_bytes;
 	uint8_t good_sets = 0;
 	uint32_t motor_speed = 0;
-	rpms = 0;
+	rpms_ = 0;
 	int index;
 
 	while (!shutting_down_ && !got_scan)
 	{
 		// Wait until first data sync of frame: 0xFA, 0xA0
-		try
-		{
-			readWithTimeout(serial_, boost::asio::buffer(&raw_bytes[start_count], 1), boost::posix_time::seconds( 1 ));
-//			boost::asio::read(serial_, boost::asio::buffer(&raw_bytes[start_count], 1));
-		}
-		catch (boost::system::system_error ex)
-		{
-			ROS_ERROR("%d,An exception was thrown: %s", __LINE__,ex.what());
-			read_false();
-			continue;
-		}
-		read_success();
+		readWithTimeout(serial_, boost::asio::buffer(&raw_bytes[start_count], 1), boost::posix_time::seconds( 1 ));
+		readSuccess();
 		if (start_count == 0)
 		{
 			if (raw_bytes[start_count] == 0xFA)
@@ -41,20 +29,9 @@ void LFCDLaserSecondGen::poll(sensor_msgs::LaserScan::Ptr scan)
 			{
 				start_count = 0;
 				// Now that entire start sequence has been found, read in the rest of the message
-				try
-				{
-					readWithTimeout(serial_, boost::asio::buffer(&raw_bytes[2], 1978), boost::posix_time::seconds(1));
-				}
-				catch (boost::system::system_error ex)
-				{
-					ROS_ERROR("%d,An exception was thrown: %s", __LINE__,ex.what());
-					// if(ex == boost::asio::read::eof)
-					read_false();
-					start_count = 0;
-					continue;
-				}
+				readWithTimeout(serial_, boost::asio::buffer(&raw_bytes[2], 1978), boost::posix_time::seconds(1));
 				got_scan = true;
-				read_success();
+				readSuccess();
 				scan->angle_min = 0.0;
 				scan->angle_increment = (2.0 * M_PI / 360.0);
 				scan->angle_max = 2.0 * M_PI - scan->angle_increment;
@@ -70,7 +47,7 @@ void LFCDLaserSecondGen::poll(sensor_msgs::LaserScan::Ptr scan)
 					{
 						good_sets++;
 						motor_speed += (raw_bytes[i + 3] << 8) + raw_bytes[i + 2];
-						rpms = (raw_bytes[i + 3] << 8 | raw_bytes[i + 2]) / 10;
+						rpms_ = (raw_bytes[i + 3] << 8 | raw_bytes[i + 2]) / 10;
 
 						for (uint16_t j = i + 4; j < i + 20; j = j + 4)
 						{
@@ -94,16 +71,15 @@ void LFCDLaserSecondGen::poll(sensor_msgs::LaserScan::Ptr scan)
 								continue;
 							}
 #if LIDAR_BLOCK_RANGE_ENABLE
-							if (block_angle_1 != -1 && check_within_range(359 - index, block_angle_1, block_range))
+							if (block_angle_1_ != -1 && checkWithinRange(359 - index, block_angle_1_, block_range_))
 								scan->ranges[359 - index] = std::numeric_limits<float>::infinity();
-							else if (block_angle_2 != -1 && check_within_range(359 - index, block_angle_2, block_range))
+							else if (block_angle_2_ != -1 && checkWithinRange(359 - index, block_angle_2_, block_range_))
 								scan->ranges[359 - index] = std::numeric_limits<float>::infinity();
-							else if (block_angle_3 != -1 && check_within_range(359 - index, block_angle_3, block_range))
+							else if (block_angle_3_ != -1 && checkWithinRange(359 - index, block_angle_3_, block_range_))
 								scan->ranges[359 - index] = std::numeric_limits<float>::infinity();
 							else
 								scan->ranges[359 - index] = range / 1000.0;
 #else
-							// scan->ranges[node_count-1-i] = read_value;
 							scan->ranges[359 - index] = range / 1000.0;
 #endif
 							scan->intensities[359 - index] = intensity;
@@ -117,6 +93,5 @@ void LFCDLaserSecondGen::poll(sensor_msgs::LaserScan::Ptr scan)
 			}
 		}
 	}
-}
 }
 
