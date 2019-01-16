@@ -3,7 +3,7 @@
   <node pkg="hls_lfcd_lds_driver" type="hlds_laser_publisher" name="hlds_laser_publisher" output="screen">
     <param name="port" type="string" value="/dev/ttyS1"/>
     <param name="frame_id_" value="laser"/>
-    <param name="laserGen" type="int" value="2"/>
+    <param name="laserGen" type="int" value="1"/>
     <param name="block_angle_1_" type="int" value="8"/>
     <param name="block_angle_2_" type="int" value="127"/>
     <param name="block_angle_3_" type="int" value="249"/>
