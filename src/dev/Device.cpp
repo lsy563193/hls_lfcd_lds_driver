@@ -274,7 +274,7 @@ void Device::updateCompensateLidarMatrix(sensor_msgs::LaserScan lidarScanData_)
 						-sin(now_yaw_), cos(now_yaw_), now_x_ * sin(now_yaw_) - now_y_ * cos(now_yaw_),
 						0, 0, 1;
 
-	publishScanCompensate(lidar_matrix_);
+//	publishScanCompensate(lidar_matrix_);
 	lidar_matrix_ = transform_lidar_baselink_ * lidar_matrix_; // in base_link coordinate
 	//publish marker
 	std::vector<Double_Point> points_vec;
@@ -308,8 +308,7 @@ void Device::delayPub(ros::Publisher *pub_linear, sensor_msgs::LaserScan::Ptr sc
 		if (delay_ > delay_when_republish_)
 		{
 			pub_linear->publish(*scan_msg);
-			if (checkFresh(1, 2))
-				updateCompensateLidarMatrix(*scan_msg);
+			updateCompensateLidarMatrix(*scan_msg);
 			scan_update_time_ = ros::Time::now().toSec();
 		}
 		else

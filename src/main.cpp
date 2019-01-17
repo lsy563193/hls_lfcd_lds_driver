@@ -57,7 +57,7 @@ void odomCb(const nav_msgs::Odometry::ConstPtr &msg)
 
 	laser->odom_update_time_ = ros::Time::now().toSec();
 
-	if (!laser->shutting_down_ && laser->checkFresh(2, 10))
+	if (!laser->shutting_down_ && laser->checkFresh(2, 1000))
 	{
 		laser->scanXY_mutex_.lock();
 		std::vector<Double_Point> points_vec;
