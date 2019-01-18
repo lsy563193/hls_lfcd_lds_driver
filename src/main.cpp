@@ -168,6 +168,12 @@ int main(int argc, char **argv)
 		try
 		{
 			laser->poll(scan);
+			scan->header.stamp = ros::Time::now();
+			std_msgs::UInt16 rpm;
+			rpm.data = laser->rpms_;
+			motor_pub.publish(rpm);
+			laser->scan_original_pub_.publish(scan);
+			laser->delayPub(&laser->scan_linear_pub_, scan);
 		}
 		//Power off laser when laser is in read data.
 		catch (const char *msg)
@@ -182,15 +188,15 @@ int main(int argc, char **argv)
 			laser->readFalse();
 			continue;
 		}
-		scan->header.stamp = ros::Time::now();
-
-		std_msgs::UInt16 rpm;
-		rpm.data = laser->rpms_;
-		motor_pub.publish(rpm);
-		laser->scan_original_pub_.publish(scan);
-		laser->delayPub(&laser->scan_linear_pub_, scan);
 	}
 
-	laser->shutting_down_ = true;
+	int retry_count = 1;
+	while(!laser->lidarPmGpio('0') && retry_count < 4)
+	{
+		ROS_ERROR("\033[34mrplidar_ros/node.cpp. %s %d: Power down lidar failed, retry.\033[0m", __FUNCTION__, __LINE__);
+		usleep(800000);
+		retry_count++;
+	}
+	delete laser;
 	return 0;
 }
