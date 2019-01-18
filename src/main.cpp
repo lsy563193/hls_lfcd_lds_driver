@@ -128,12 +128,12 @@ int main(int argc, char **argv)
 		tmp_ret = pthread_create(&scan_ctrl_thread_id, nullptr, scanCtrlRoutine, nullptr);
 	}
 
-	ros::Publisher motor_pub = n.advertise<std_msgs::UInt16>("rpms", 1000);
-	laser->point_marker_pub_ = n.advertise<visualization_msgs::Marker>("lidarPoint", 1000);
-	laser->scan_original_pub_ = n.advertise<sensor_msgs::LaserScan>("scanOriginal", 1000);
-	laser->scan_linear_pub_ = n.advertise<sensor_msgs::LaserScan>("scanLinear", 1000);
-	laser->scan_compensate_pub_ = n.advertise<sensor_msgs::LaserScan>("scanCompensate", 1000);
-	auto motor_service = n.advertiseService("lidar_motor_ctrl", lidarMotorCtrl);
+	ros::Publisher motor_pub = n.advertise<std_msgs::UInt16>("/lds/rpms", 1000);
+	laser->point_marker_pub_ = n.advertise<visualization_msgs::Marker>("/lds/lidarPoint", 1000);
+	laser->scan_original_pub_ = n.advertise<sensor_msgs::LaserScan>("/lds/scanOriginal", 1000);
+	laser->scan_linear_pub_ = n.advertise<sensor_msgs::LaserScan>("/lds/scanLinear", 1000);
+	laser->scan_compensate_pub_ = n.advertise<sensor_msgs::LaserScan>("/lds/scanCompensate", 1000);
+	auto motor_service = n.advertiseService("/lds/lidar_motor_ctrl", lidarMotorCtrl);
 	ROS_WARN("lidarMotorCtrl service is up.");
 
 	auto scan_ctrl_sub = n.subscribe("/scan_ctrl", 1, &scanCtrlCb);
@@ -152,8 +152,8 @@ int main(int argc, char **argv)
 #endif
 
 	auto tmp_theta = laser->LIDAR_OFFSET_THETA_ * M_PI / 180.0;
-	laser->transform_lidar_baselink_ << cos(tmp_theta), sin(tmp_theta), laser->LIDAR_OFFSET_X_,
-						-sin(tmp_theta), cos(tmp_theta), laser->LIDAR_OFFSET_Y_,
+	laser->transform_lidar_baselink_ << cos(tmp_theta), -sin(tmp_theta), laser->LIDAR_OFFSET_X_,
+						sin(tmp_theta), cos(tmp_theta), laser->LIDAR_OFFSET_Y_,
 						0, 0, 1;
 
 	while (ros::ok())
@@ -172,13 +172,13 @@ int main(int argc, char **argv)
 		//Power off laser when laser is in read data.
 		catch (const char *msg)
 		{
-			ROS_ERROR("%s",msg);
+			ROS_WARN("%s",msg);
 			continue;
 		}
 		//Time out when laser is in read data.
 		catch (boost::system::system_error ex)
 		{
-			ROS_ERROR("An exception was thrown: %s", ex.what());
+			ROS_WARN("An exception was thrown: %s", ex.what());
 			laser->readFalse();
 			continue;
 		}
