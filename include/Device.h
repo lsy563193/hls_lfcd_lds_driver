@@ -73,7 +73,8 @@ public:
 	boost::asio::serial_port* serial_{NULL}; ///< @brief Actual serial port object for reading/writing to the LFCD Laser Scanner
 	uint16_t rpms_; ///< @brief RPMS derived from the rpm bytes in an LFCD packet
 	uint32_t baud_rate_; ///< @brief The baud rate for the serial connection
-	bool shutting_down_{true}; ///< @brief Flag for whether the driver is supposed to be shutting down or not uint16_t motor_speed_; ///< @brief current motor speed as reported by the LFCD.
+	bool shutting_down_{true}; ///< @brief Flag for whether the driver is supposed to be shutting down or not
+//	uint16_t motor_speed_; ///< @brief current motor speed as reported by the LFCD.
 
 	double lidar_stuck_time_ = 0;
 	int lidar_stuck_count_ = 0;

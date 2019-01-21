@@ -21,7 +21,7 @@ void Device::readWithTimeout
 			s->cancel();
 	}
 
-	if(shutting_down_)
+	if (shutting_down_)
 		throw "Power off lidar when lidar in read";
 	if (*read_result)
 		throw boost::system::system_error(*read_result);
@@ -34,7 +34,7 @@ bool Device::lidarPmGpio(char cmd)
 
 	if (cmd != '1' && cmd != '0')
 	{
-		ROS_ERROR("hls_lfcd_lds_driver/node.cpp. %s %d: Wrong param: '%c', default set 1", __FUNCTION__, __LINE__, cmd);
+		ROS_ERROR("[lds driver] %s %d: Wrong param: '%c', default set 1", __FUNCTION__, __LINE__, cmd);
 		cmd = '1';
 	}
 
@@ -46,29 +46,29 @@ bool Device::lidarPmGpio(char cmd)
  *		check	25th bit diff in " o 'n' " or "o 'f' f"
  */
 	char r_val = (cmd == '1') ? 'n' : 'f';
-	ROS_DEBUG("hls_lfcd_lds_driver/node.cpp. %s %d: Operate on gpio.", __FUNCTION__, __LINE__);
+	ROS_DEBUG("[lds driver] %s %d: Operate on gpio.", __FUNCTION__, __LINE__);
 	int fd = open("/proc/driver/wifi-pm/power", O_RDWR);
 	if (fd == -1)
 	{
-		ROS_ERROR("hls_lfcd_lds_driver/node.cpp. %s %d: Open file failed.", __FUNCTION__, __LINE__);
+		ROS_ERROR("[lds driver] %s %d: Open file failed.", __FUNCTION__, __LINE__);
 		return false;
 	}
 	if (write(fd, w_buf, 1) == -1)
 	{
-		ROS_ERROR("hls_lfcd_lds_driver/node.cpp. %s %d: Write file failed.", __FUNCTION__, __LINE__);
+		ROS_ERROR("[lds driver] %s %d: Write file failed.", __FUNCTION__, __LINE__);
 		return false;
 	}
 	usleep(200000);
 	if (readLine(fd, r_buf) == -1)
 	{
-		ROS_ERROR("hls_lfcd_lds_driver/node.cpp. %s %d: Read file failed.", __FUNCTION__, __LINE__);
+		ROS_ERROR("[lds driver] %s %d: Read file failed.", __FUNCTION__, __LINE__);
 		return false;
 	}
 	fsync(fd);
 	close(fd);
 	if(cmd == '1' && laserGen == 2)
 		startMotor();
-	ROS_WARN("hls_lfcd_lds_driver/node.cpp. %s %d: Response: '%s'.", __FUNCTION__, __LINE__, r_buf);
+	ROS_WARN("[lds driver] %s %d: Response: '%s'.", __FUNCTION__, __LINE__, r_buf);
 	return r_buf[25] == r_val;
 }
 
@@ -113,7 +113,7 @@ void Device::readFalse()
 		if (lidar_stuck_time_ == 0)
 			lidar_stuck_time_ = ros::Time::now().toSec();
 		auto diff_time = ros::Time::now().toSec() - lidar_stuck_time_;
-		// ROS_WARN("hls_lfcd_lds_driver/node.cpp. %s %d: grabScanData no ok for %.2fs, tolerance %ds.",
+		// ROS_WARN("[lds driver] %s %d: grabScanData no ok for %.2fs, tolerance %ds.",
 		//  __FUNCTION__, __LINE__,  diff_time, stuck_time_tolerance);
 		ROS_INFO("~~~~~~~~~~~~~~~~~~~~Stuck timeout(%.2lf,%d).", diff_time, stuck_time_tolerance);
 		if (diff_time > stuck_time_tolerance) //time tolerance for seconds
@@ -135,7 +135,7 @@ bool Device::readSuccess()
 	if (first_power_on_)
 	{
 		first_power_on_ = false;
-		ROS_WARN("hls_lfcd_lds_driver/node.cpp. %s %d: grabScanData ok:.", __FUNCTION__, __LINE__);
+		ROS_WARN("[lds driver] %s %d: grabScanData ok:.", __FUNCTION__, __LINE__);
 	}
 	lidar_stuck_time_ = 0;
 	lidar_stuck_count_ = 0;

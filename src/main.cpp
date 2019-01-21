@@ -19,6 +19,7 @@ bool lidarMotorCtrl(hls_lfcd_lds_driver::SetLidar::Request &req, hls_lfcd_lds_dr
 	{
 		if (laser->shutting_down_)
 		{
+			ROS_INFO("\033[1m" "[lds driver] %s %d: Start Motor" "\033[0m", __FUNCTION__, __LINE__);
 			laser->lidarPmGpio('1');
 			laser->shutting_down_ = false;
 			laser->first_power_on_ = true;
@@ -26,13 +27,11 @@ bool lidarMotorCtrl(hls_lfcd_lds_driver::SetLidar::Request &req, hls_lfcd_lds_dr
 	}
 	else if (req.switch_status == 0)
 	{
-		if(!laser->shutting_down_)
-		{
-			laser->lidarPmGpio('0');
-			laser->shutting_down_ = true;
-		}
+		ROS_INFO("\033[1m" "[lds driver] %s %d: Stop Motor" "\033[0m", __FUNCTION__, __LINE__);
+		laser->lidarPmGpio('0');
+		laser->shutting_down_ = true;
 	}
-	res.message = "Driver ommand received:";
+	res.message = "Driver command received:";
 	res.message += (req.switch_status != 0 ? "true" : "false");
 	res.success = static_cast<unsigned char>(true);
 	return true;
@@ -98,6 +97,9 @@ void *scanCtrlRoutine(void *)
 
 int main(int argc, char **argv)
 {
+	// Set the stdout buffer to one line.
+	setvbuf(stdout, NULL, _IOLBF, 0);
+
 	ros::init(argc, argv, "hlds_laser_publisher");
 	ros::NodeHandle n;
 	ros::NodeHandle nh_private("~");
@@ -136,7 +138,7 @@ int main(int argc, char **argv)
 	auto motor_service = n.advertiseService("/lds/lidar_motor_ctrl", lidarMotorCtrl);
 	ROS_WARN("lidarMotorCtrl service is up.");
 
-	auto scan_ctrl_sub = n.subscribe("/scan_ctrl", 1, &scanCtrlCb);
+	auto scan_ctrl_sub = n.subscribe("/pp/scan_ctrl", 1, &scanCtrlCb);
 	auto odom_sub = n.subscribe("/odom", 1, &odomCb);
 
 	nh_private.param<double>("LIDAR_OFFSET_X", laser->LIDAR_OFFSET_X_, 0);
