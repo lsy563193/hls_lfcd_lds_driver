@@ -1,7 +1,7 @@
 //
 // Created by pierre on 18-8-8.
 //
-#include "OnePointFiveGenLaser.hpp"
+#include "FirstGenLaser.hpp"
 void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 {
 	uint8_t start_count = 0;

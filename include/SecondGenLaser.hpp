@@ -1,6 +1,7 @@
 //
 // Created by pierre on 18-8-23.
 //
+// This is for LDS 2.0.
 
 #ifndef HLS_LFCD_LDS_DRIVER_SECONDGENLASER_HPP
 #define HLS_LFCD_LDS_DRIVER_SECONDGENLASER_HPP

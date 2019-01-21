@@ -1,9 +1,10 @@
 //
 // Created by pierre on 18-8-23.
 //
+// This is for LDS 1.5.
 
-#ifndef HLS_LFCD_LDS_DRIVER_ONEPOINTFIVEGENLASER_HPP
-#define HLS_LFCD_LDS_DRIVER_ONEPOINTFIVEGENLASER_HPP
+#ifndef HLS_LFCD_LDS_DRIVER_FIRSTGENLASER_HPP
+#define HLS_LFCD_LDS_DRIVER_FIRSTGENLASER_HPP
 #include "Device.h"
 class LFCDLaserFirstGen : public Device
 {
@@ -20,4 +21,4 @@ public:
 
 	virtual void poll(sensor_msgs::LaserScan::Ptr scan);
 };
-#endif //HLS_LFCD_LDS_DRIVER_ONEPOINTFIVEGENLASER_HPP
+#endif //HLS_LFCD_LDS_DRIVER_FIRSTGENLASER_HPP

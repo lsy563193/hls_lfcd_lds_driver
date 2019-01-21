@@ -3,7 +3,7 @@
 #include <nav_msgs/Odometry.h>
 #include <tf/transform_listener.h>
 
-#include <OnePointFiveGenLaser.hpp>
+#include <FirstGenLaser.hpp>
 #include <SecondGenLaser.hpp>
 #include <hls_lfcd_lds_driver/SetLidar.h>
 #include <hls_lfcd_lds_driver/scan_ctrl.h>
@@ -139,7 +139,7 @@ int main(int argc, char **argv)
 	ROS_WARN("lidarMotorCtrl service is up.");
 
 	auto scan_ctrl_sub = n.subscribe("/pp/scan_ctrl", 1, &scanCtrlCb);
-	auto odom_sub = n.subscribe("/odom", 1, &odomCb);
+	auto odom_sub = n.subscribe("/odom", 2, &odomCb);
 
 	nh_private.param<double>("LIDAR_OFFSET_X", laser->LIDAR_OFFSET_X_, 0);
 	nh_private.param<double>("LIDAR_OFFSET_Y", laser->LIDAR_OFFSET_Y_, 0);
