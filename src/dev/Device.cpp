@@ -22,7 +22,7 @@ void Device::readWithTimeout
 	}
 
 	if (shutting_down_)
-		throw "Power off lidar when lidar in read";
+		throw "[lds driver] Power off lidar when lidar in read.";
 	if (*read_result)
 		throw boost::system::system_error(*read_result);
 }
@@ -115,18 +115,21 @@ void Device::readFalse()
 		auto diff_time = ros::Time::now().toSec() - lidar_stuck_time_;
 		// ROS_WARN("[lds driver] %s %d: grabScanData no ok for %.2fs, tolerance %ds.",
 		//  __FUNCTION__, __LINE__,  diff_time, stuck_time_tolerance);
-		ROS_INFO("~~~~~~~~~~~~~~~~~~~~Stuck timeout(%.2lf,%d).", diff_time, stuck_time_tolerance);
+		ROS_WARN("[lds driver] %s %d: Stuck timeout(%.2lf,%d).", __FUNCTION__, __LINE__, diff_time,
+				stuck_time_tolerance);
 		if (diff_time > stuck_time_tolerance) //time tolerance for seconds
 		{
-			ROS_WARN("Stuck timeout(%.2f,%d).", diff_time, stuck_time_tolerance);
+			ROS_WARN("[lds driver] %s %d: Stuck timeout(%.2f,%d).", __FUNCTION__, __LINE__, diff_time,
+					stuck_time_tolerance);
 			lidar_stuck_time_ = 0;
 			lidar_stuck_count_++;
 			lidarPmGpio('0');
 			// In case power up and down too fast.
 			usleep(800000);
 			lidarPmGpio('1');
-			ROS_WARN("Restart motor.");
-		}
+			ROS_WARN("[lds driver] %s %d: Restart motor.", __FUNCTION__, __LINE__);
+		} else
+			usleep(100000);
 	}
 }
 
@@ -135,7 +138,7 @@ bool Device::readSuccess()
 	if (first_power_on_)
 	{
 		first_power_on_ = false;
-		ROS_WARN("[lds driver] %s %d: grabScanData ok:.", __FUNCTION__, __LINE__);
+		ROS_WARN("[lds driver] %s %d: Read data succeeded.", __FUNCTION__, __LINE__);
 	}
 	lidar_stuck_time_ = 0;
 	lidar_stuck_count_ = 0;
