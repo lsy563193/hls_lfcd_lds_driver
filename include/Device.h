@@ -69,12 +69,12 @@ public:
 	virtual int convertAngleRange(int x);
 	virtual bool checkWithinRange(int i, int start, int range);
 	virtual void pubPointMarker(std::vector<Double_Point> *point);
+	virtual void checkChangeLidarPower();
 
 	boost::asio::serial_port* serial_{NULL}; ///< @brief Actual serial port object for reading/writing to the LFCD Laser Scanner
 	uint16_t rpms_; ///< @brief RPMS derived from the rpm bytes in an LFCD packet
 	uint32_t baud_rate_; ///< @brief The baud rate for the serial connection
-	bool shutting_down_{true}; ///< @brief Flag for whether the driver is supposed to be shutting down or not
-//	uint16_t motor_speed_; ///< @brief current motor speed as reported by the LFCD.
+	bool shutting_down_{true}; ///< @brief Flag for whether the driver is supposed to be shutting down or not uint16_t motor_speed_;
 
 	double lidar_stuck_time_ = 0;
 	int lidar_stuck_count_ = 0;
@@ -82,6 +82,8 @@ public:
 	int delay_ = 0;
 	int delay_when_republish_ = 1;
 	bool first_power_on_{false};
+	bool motor_start_flag_{false};
+	bool motor_stop_flag_{true};
 	//The transform of lidar coordinate to base_link coordinate
 	double LIDAR_OFFSET_X_, LIDAR_OFFSET_Y_, LIDAR_OFFSET_THETA_;
 	std::vector<int> noiseNum_;
