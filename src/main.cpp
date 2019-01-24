@@ -162,6 +162,7 @@ int main(int argc, char **argv)
 	while (ros::ok())
 	{
 		laser->checkChangeLidarPower();
+
 		if (laser->shutting_down_)
 		{
 			usleep(20000);

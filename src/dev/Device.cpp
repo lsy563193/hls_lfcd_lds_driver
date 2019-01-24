@@ -109,17 +109,16 @@ void Device::checkChangeLidarPower()
 		int retry_count = 1;
 		while (!lidarPmGpio('1') && retry_count < 4)
 		{
-			ROS_ERROR("\033[34m%s %d: Power up lidar failed, retry.\033[0m", __FUNCTION__,
-					  __LINE__);
+			ROS_ERROR("[lds driver] %s %d: Power up lidar failed, retry.", __FUNCTION__, __LINE__);
 			usleep(800000);
 			retry_count++;
 		}
 		if (retry_count >= 4)
-			ROS_ERROR("\033[34m%s %d: Power up lidar failed.\033[0m", __FUNCTION__, __LINE__);
+			ROS_ERROR("[lds driver] %s %d: Power up lidar failed.", __FUNCTION__, __LINE__);
 		else
 		{
 			first_power_on_ = true;
-			ROS_INFO("\033[34m%s %d: Power up lidar succeed.\033[0m", __FUNCTION__, __LINE__);
+			ROS_INFO("[lds driver] %s %d: Power up lidar succeed.", __FUNCTION__, __LINE__);
 		}
 	}
 	if (motor_stop_flag_)
@@ -128,15 +127,14 @@ void Device::checkChangeLidarPower()
 		int retry_count = 1;
 		while (!lidarPmGpio('0') && retry_count < 4)
 		{
-			ROS_ERROR("\033[34m%s %d: Power down lidar failed, retry.\033[0m", __FUNCTION__,
-					  __LINE__);
+			ROS_ERROR("[lds driver] %s %d: Power down lidar failed, retry.", __FUNCTION__, __LINE__);
 			usleep(800000);
 			retry_count++;
 		}
 		if (retry_count >= 4)
-			ROS_ERROR("\033[34m%s %d: Power down lidar failed.\033[0m", __FUNCTION__, __LINE__);
+			ROS_ERROR("[lds driver] %s %d: Power down lidar failed.", __FUNCTION__, __LINE__);
 		else
-			ROS_INFO("\033[34m%s %d: Power down lidar succeed.\033[0m", __FUNCTION__, __LINE__);
+			ROS_INFO("[lds driver] %s %d: Power down lidar succeed.", __FUNCTION__, __LINE__);
 	}
 }
 
