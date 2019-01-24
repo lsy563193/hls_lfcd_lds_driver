@@ -84,6 +84,7 @@ public:
 	bool first_power_on_{false};
 	bool motor_start_flag_{false};
 	bool motor_stop_flag_{true};
+	bool restart_{false};
 	//The transform of lidar coordinate to base_link coordinate
 	double LIDAR_OFFSET_X_, LIDAR_OFFSET_Y_, LIDAR_OFFSET_THETA_;
 	std::vector<int> noiseNum_;

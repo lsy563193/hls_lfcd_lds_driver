@@ -92,7 +92,7 @@ void odomCb(const nav_msgs::Odometry::ConstPtr &msg)
 void *scanCtrlRoutine(void *)
 {
 	pthread_detach(pthread_self());
-	ROS_INFO("\033[34mhls_lfcd_lds_driver/node.cpp. %s %d: scan_ctrl thread is up.\033[0m", __FUNCTION__, __LINE__);
+	ROS_INFO("[lds driver] %s %d: scan_ctrl thread is up.", __FUNCTION__, __LINE__);
 	ros::spin();
 }
 
@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 		laser = new LFCDLaserSecondGen(&serial);
 	else
 	{
-		ROS_ERROR("Parameter laserGen is wrong! Please input 1 or 2");
+		ROS_ERROR("[lds driver] Parameter laserGen is wrong! Please input 1 or 2");
 		return -1;
 	}
 
@@ -126,7 +126,7 @@ int main(int argc, char **argv)
 	int8_t tmp_ret = pthread_create(&scan_ctrl_thread_id, nullptr, scanCtrlRoutine, nullptr);
 	while (tmp_ret != 0)
 	{
-		ROS_ERROR("%s %d: Create scan_ctrl_thread failed, retry!", __FUNCTION__, __LINE__);
+		ROS_ERROR("[lds driver] %s %d: Create scan_ctrl_thread failed, retry!", __FUNCTION__, __LINE__);
 		usleep(50000);
 		tmp_ret = pthread_create(&scan_ctrl_thread_id, nullptr, scanCtrlRoutine, nullptr);
 	}
@@ -137,7 +137,7 @@ int main(int argc, char **argv)
 	laser->scan_linear_pub_ = n.advertise<sensor_msgs::LaserScan>("/lds/scanLinear", 1000);
 	laser->scan_compensate_pub_ = n.advertise<sensor_msgs::LaserScan>("/lds/scanCompensate", 1000);
 	auto motor_service = n.advertiseService("/lds/lidar_motor_ctrl", lidarMotorCtrl);
-	ROS_WARN("lidarMotorCtrl service is up.");
+	ROS_WARN("[lds driver] lidarMotorCtrl service is up.");
 
 	auto scan_ctrl_sub = n.subscribe("/pp/scan_ctrl", 1, &scanCtrlCb);
 	auto odom_sub = n.subscribe("/odom", 2, &odomCb);
@@ -189,7 +189,7 @@ int main(int argc, char **argv)
 		//Time out when laser is in read data.
 		catch (boost::system::system_error ex)
 		{
-			ROS_WARN("An exception was thrown: %s", ex.what());
+			ROS_WARN("[lds driver] An exception was thrown: %s", ex.what());
 			laser->readFalse();
 			continue;
 		}
@@ -198,7 +198,7 @@ int main(int argc, char **argv)
 	int retry_count = 1;
 	while(!laser->lidarPmGpio('0') && retry_count < 4)
 	{
-		ROS_ERROR("\033[34m%s %d: Power down lidar failed, retry.\033[0m", __FUNCTION__, __LINE__);
+		ROS_ERROR("[lds driver] %s %d: Power down lidar failed, retry.", __FUNCTION__, __LINE__);
 		usleep(800000);
 		retry_count++;
 	}

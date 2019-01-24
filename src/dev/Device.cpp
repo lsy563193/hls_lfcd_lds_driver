@@ -68,7 +68,7 @@ bool Device::lidarPmGpio(char cmd)
 	close(fd);
 	if(cmd == '1' && laserGen == 2)
 		startMotor();
-	ROS_WARN("[lds driver] %s %d: Response: '%s'.", __FUNCTION__, __LINE__, r_buf);
+	ROS_WARN("[lds driver] %s %d: Command: %c, Response: '%s'.", __FUNCTION__, __LINE__, cmd, r_buf);
 	return r_buf[25] == r_val;
 }
 
@@ -158,14 +158,12 @@ void Device::readFalse()
 				stuck_time_tolerance);
 		if (diff_time > stuck_time_tolerance) //time tolerance for seconds
 		{
-			ROS_WARN("[lds driver] %s %d: Stuck timeout(%.2f,%d). Restart motor", __FUNCTION__, __LINE__, diff_time,
-					stuck_time_tolerance);
 			lidar_stuck_time_ = 0;
 			lidar_stuck_count_++;
 			int retry_count = 1;
 			while(!lidarPmGpio('0') && retry_count < 4)
 			{
-				ROS_ERROR("\033[34m%s %d: Power down lidar failed, retry.\033[0m", __FUNCTION__, __LINE__);
+				ROS_ERROR("[lds driver] %s %d: Power down lidar failed, retry.", __FUNCTION__, __LINE__);
 				usleep(800000);
 				retry_count++;
 			}
@@ -174,10 +172,11 @@ void Device::readFalse()
 			retry_count = 0;
 			while(!lidarPmGpio('1') && retry_count < 4)
 			{
-				ROS_ERROR("\033[34m%s %d: Power up lidar failed, retry.\033[0m", __FUNCTION__, __LINE__);
+				ROS_ERROR("[lds driver] %s %d: Power up lidar failed, retry.", __FUNCTION__, __LINE__);
 				usleep(800000);
 				retry_count++;
 			}
+			restart_ = true;
 		}
 	}
 }
@@ -187,7 +186,12 @@ bool Device::readSuccess()
 	if (first_power_on_)
 	{
 		first_power_on_ = false;
-		ROS_WARN("[lds driver] %s %d: Read data succeeded.", __FUNCTION__, __LINE__);
+		ROS_WARN("[lds driver] %s %d: First time read data succeeded.", __FUNCTION__, __LINE__);
+	}
+	if (restart_)
+	{
+		restart_ = false;
+		ROS_WARN("[lds driver] %s %d: Restart read data succeeded.", __FUNCTION__, __LINE__);
 	}
 	lidar_stuck_time_ = 0;
 	lidar_stuck_count_ = 0;

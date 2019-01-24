@@ -16,7 +16,6 @@ void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 	{
 		// Wait until first data sync of frame: 0xFA, 0xA0
 		readWithTimeout(serial_, boost::asio::buffer(&raw_bytes[start_count], 1),boost::posix_time::seconds( 1 ));
-		readSuccess();
 		if (start_count == 0)
 		{
 			if (raw_bytes[start_count] == 0xFA)
