@@ -20,15 +20,16 @@ bool lidarMotorCtrl(hls_lfcd_lds_driver::SetLidar::Request &req, hls_lfcd_lds_dr
 		if (laser->shutting_down_)
 		{
 			ROS_INFO("\033[1m" "[lds driver] %s %d: Start Motor" "\033[0m", __FUNCTION__, __LINE__);
-			laser->lidarPmGpio('1');
+			laser->motor_start_flag_ = true;
+			laser->motor_stop_flag_  = false;
 			laser->shutting_down_ = false;
-			laser->first_power_on_ = true;
 		}
 	}
 	else if (req.switch_status == 0)
 	{
 		ROS_INFO("\033[1m" "[lds driver] %s %d: Stop Motor" "\033[0m", __FUNCTION__, __LINE__);
-		laser->lidarPmGpio('0');
+		laser->motor_start_flag_ = false;
+		laser->motor_stop_flag_  = true;
 		laser->shutting_down_ = true;
 	}
 	res.message = "Driver command received:";
@@ -165,6 +166,8 @@ int main(int argc, char **argv)
 			usleep(20000);
 			continue;
 		}
+
+		laser->checkChangeLidarPower();
 		sensor_msgs::LaserScan::Ptr scan(new sensor_msgs::LaserScan);
 		scan->header.frame_id = laser->frame_id_;
 		try
@@ -195,7 +198,7 @@ int main(int argc, char **argv)
 	int retry_count = 1;
 	while(!laser->lidarPmGpio('0') && retry_count < 4)
 	{
-		ROS_ERROR("\033[34mrplidar_ros/node.cpp. %s %d: Power down lidar failed, retry.\033[0m", __FUNCTION__, __LINE__);
+		ROS_ERROR("\033[34m%s %d: Power down lidar failed, retry.\033[0m", __FUNCTION__, __LINE__);
 		usleep(800000);
 		retry_count++;
 	}

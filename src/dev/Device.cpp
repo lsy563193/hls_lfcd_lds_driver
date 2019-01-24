@@ -101,6 +101,45 @@ int  Device::readLine(int fd, char *buf)
 	return i;
 }
 
+void Device::checkChangeLidarPower()
+{
+	if (motor_start_flag_)
+	{
+		motor_start_flag_ = false;
+		int retry_count = 1;
+		while (!lidarPmGpio('1') && retry_count < 4)
+		{
+			ROS_ERROR("\033[34m%s %d: Power up lidar failed, retry.\033[0m", __FUNCTION__,
+					  __LINE__);
+			usleep(800000);
+			retry_count++;
+		}
+		if (retry_count >= 4)
+			ROS_ERROR("\033[34m%s %d: Power up lidar failed.\033[0m", __FUNCTION__, __LINE__);
+		else
+		{
+			first_power_on_ = true;
+			ROS_INFO("\033[34m%s %d: Power up lidar succeed.\033[0m", __FUNCTION__, __LINE__);
+		}
+	}
+	if (motor_stop_flag_)
+	{
+		motor_stop_flag_ = false;
+		int retry_count = 1;
+		while (!lidarPmGpio('0') && retry_count < 4)
+		{
+			ROS_ERROR("\033[34m%s %d: Power down lidar failed, retry.\033[0m", __FUNCTION__,
+					  __LINE__);
+			usleep(800000);
+			retry_count++;
+		}
+		if (retry_count >= 4)
+			ROS_ERROR("\033[34m%s %d: Power down lidar failed.\033[0m", __FUNCTION__, __LINE__);
+		else
+			ROS_INFO("\033[34m%s %d: Power down lidar succeed.\033[0m", __FUNCTION__, __LINE__);
+	}
+}
+
 void Device::readFalse()
 {
 	int stuck_time_tolerance = lidar_stuck_count_ + 1;
@@ -119,17 +158,27 @@ void Device::readFalse()
 				stuck_time_tolerance);
 		if (diff_time > stuck_time_tolerance) //time tolerance for seconds
 		{
-			ROS_WARN("[lds driver] %s %d: Stuck timeout(%.2f,%d).", __FUNCTION__, __LINE__, diff_time,
+			ROS_WARN("[lds driver] %s %d: Stuck timeout(%.2f,%d). Restart motor", __FUNCTION__, __LINE__, diff_time,
 					stuck_time_tolerance);
 			lidar_stuck_time_ = 0;
 			lidar_stuck_count_++;
-			lidarPmGpio('0');
+			int retry_count = 1;
+			while(!lidarPmGpio('0') && retry_count < 4)
+			{
+				ROS_ERROR("\033[34m%s %d: Power down lidar failed, retry.\033[0m", __FUNCTION__, __LINE__);
+				usleep(800000);
+				retry_count++;
+			}
 			// In case power up and down too fast.
 			usleep(800000);
-			lidarPmGpio('1');
-			ROS_WARN("[lds driver] %s %d: Restart motor.", __FUNCTION__, __LINE__);
-		} else
-			usleep(100000);
+			retry_count = 0;
+			while(!lidarPmGpio('1') && retry_count < 4)
+			{
+				ROS_ERROR("\033[34m%s %d: Power up lidar failed, retry.\033[0m", __FUNCTION__, __LINE__);
+				usleep(800000);
+				retry_count++;
+			}
+		}
 	}
 }
 
@@ -374,7 +423,6 @@ bool Device::checkWithinRange(int i, int start, int range)
 	return ret;
 }
 #endif
-
 void Device::pubPointMarker(std::vector<Double_Point> *point)
 {
 	visualization_msgs::Marker point_marker;
