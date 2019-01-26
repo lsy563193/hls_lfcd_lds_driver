@@ -1,9 +1,52 @@
 // // Created by pierre on 18-8-8. //
 #include "Device.h"
 extern int laserGen;
-void Device::readWithTimeout
-					(boost::asio::serial_port* s, const boost::asio::mutable_buffers_1 & buffers, const boost::asio::deadline_timer::duration_type& expiry_time)
+void Device::readWithTimeout(boost::asio::serial_port* s, const boost::asio::mutable_buffers_1 & buffers,
+		const boost::asio::deadline_timer::duration_type& expiry_time)
 {
+	int s_ret = 0;
+	//memset(t_buf,0,size_of_path);
+	fd_set read_fd_set;
+	struct timeval timeout;
+	timeout.tv_sec = 5;
+	timeout.tv_usec = 0;// ms
+	size_t length = 0;
+
+	while (1)
+	{
+		FD_ZERO(&read_fd_set);
+		FD_SET(STDIN_FILENO, &read_fd_set);
+
+		s_ret = select(FD_SETSIZE, &read_fd_set, NULL, NULL, &timeout);
+		if (s_ret < 0)
+		{
+			FD_CLR(STDIN_FILENO, &read_fd_set);
+			throw "[lds driver] Select error!!!.";
+		} else if (s_ret == 0)
+		{
+			FD_CLR(STDIN_FILENO, &read_fd_set);
+			throw "[lds driver] timeout!!!.";
+		} else if (s_ret > 0)
+		{
+			if (FD_ISSET(STDIN_FILENO, &read_fd_set))
+			{
+				auto tmp_ret = ioctl(STDIN_FILENO, FIONREAD, &length);
+				if (tmp_ret == -1)
+				{
+					FD_CLR(STDIN_FILENO, &read_fd_set);
+					throw "[lds driver] ioctl return -1.";
+				}
+				FD_CLR(STDIN_FILENO, &read_fd_set);
+				break;
+			}
+		}
+	}
+	boost::optional<boost::system::error_code> read_result;
+	boost::asio::async_read(*s, buffers, [&read_result](const boost::system::error_code &error, size_t)
+	{
+		read_result.reset(error);
+	});
+
 	boost::optional<boost::system::error_code> timer_result;
 	boost::asio::deadline_timer timer(s->get_io_service());
 	timer.expires_from_now(expiry_time);

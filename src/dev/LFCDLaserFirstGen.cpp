@@ -20,6 +20,7 @@ void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 		{
 			if (raw_bytes[start_count] == 0xFA)
 			{
+//				printf("%02x\n", raw_bytes[start_count]);
 				start_count = 1;
 			}
 		}
@@ -27,10 +28,7 @@ void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 		{
 			if (raw_bytes[start_count] == 0xA0)
 			{
-				start_count = 0;
-				readWithTimeout(serial_, boost::asio::buffer(&raw_bytes[2], 2518),boost::posix_time::seconds( 1 ));
-				got_scan = true;
-				readSuccess();
+//				printf("%02x\n", raw_bytes[start_count]);
 				scan->angle_increment = (2.0 * M_PI / 360.0);
 				scan->angle_min = 0.0;
 				scan->angle_max = 2.0 * M_PI - scan->angle_increment;
@@ -39,10 +37,17 @@ void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 				scan->ranges.resize(360);
 				scan->intensities.resize(360);
 
+				start_count = 0;
+//				readWithTimeout(serial_, boost::asio::buffer(&raw_bytes[2], 2518),boost::posix_time::seconds( 1 ));
+
 				//read data in sets of 6
-				for (uint16_t i = 0; i < raw_bytes.size(); i = i + 42)
+//				for (uint16_t i = 0; i < raw_bytes.size(); i = i + 42)
+				for (uint16_t i = 0;;)
 				{
-					if (raw_bytes[i] == 0xFA && raw_bytes[i + 1] == (0xA0 + i / 42)) //&& CRC check
+					readWithTimeout(serial_, boost::asio::buffer(&raw_bytes[i + 2], 40),boost::posix_time::seconds( 1 ));
+//					printf("Read finish.\n");
+//					if (raw_bytes[i] == 0xFA && raw_bytes[i + 1] == (0xA0 + i / 42)) //&& CRC check
+					if (1)
 					{
 						// ROS_INFO("// pass CRC check");
 						good_sets++;
@@ -85,8 +90,24 @@ void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 							scan->intensities[359-index] = intensity;
 						}
 					}
+
+					i += 42;
+					if (i < raw_bytes.size())
+					{
+						readWithTimeout(serial_, boost::asio::buffer(&raw_bytes[i], 2),
+										boost::posix_time::seconds(1));
+//						printf("Read finish2[%02x][%02x].\n", raw_bytes[i], raw_bytes[i + 1]);
+
+						if (!(raw_bytes[i] == 0xFA && raw_bytes[i + 1] == (0xA0 + i / 42))) //&& CRC check
+							throw "CRC error!";
+					}
+					else
+						break;
 				}
 				scan->time_increment = motor_speed / good_sets / 1e8;
+
+				got_scan = true;
+				readSuccess();
 			}
 			else
 			{
