@@ -4,7 +4,7 @@ extern int laserGen;
 void Device::readWithTimeout(boost::asio::serial_port* s, const boost::asio::mutable_buffers_1 & buffers,
 		const boost::asio::deadline_timer::duration_type& expiry_time)
 {
-	int s_ret = 0;
+	/*int s_ret = 0;
 	//memset(t_buf,0,size_of_path);
 	fd_set read_fd_set;
 	struct timeval timeout;
@@ -45,7 +45,7 @@ void Device::readWithTimeout(boost::asio::serial_port* s, const boost::asio::mut
 	boost::asio::async_read(*s, buffers, [&read_result](const boost::system::error_code &error, size_t)
 	{
 		read_result.reset(error);
-	});
+	});*/
 
 	boost::optional<boost::system::error_code> timer_result;
 	boost::asio::deadline_timer timer(s->get_io_service());
