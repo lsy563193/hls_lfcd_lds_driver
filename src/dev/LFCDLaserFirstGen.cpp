@@ -29,9 +29,9 @@ void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 			if (raw_bytes[start_count] == 0xA0)
 			{
 //				printf("%02x\n", raw_bytes[start_count]);
-				scan->angle_increment = (2.0 * M_PI / 360.0);
+				scan->angle_increment = static_cast<float>(2.0 * M_PI / 360.0);
 				scan->angle_min = 0.0;
-				scan->angle_max = 2.0 * M_PI - scan->angle_increment;
+				scan->angle_max = static_cast<float>(2.0 * M_PI - scan->angle_increment);
 				scan->range_min = 0.12;
 				scan->range_max = 3.5;
 				scan->ranges.resize(360);
@@ -41,20 +41,25 @@ void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 //				readWithTimeout(serial_, boost::asio::buffer(&raw_bytes[2], 2518),boost::posix_time::seconds( 1 ));
 
 				//read data in sets of 6
-//				for (uint16_t i = 0; i < raw_bytes.size(); i = i + 42)
+//				for (uint16_t i = 0; i < raw_bytes.size(); i = static_cast<uint16_t>(i + 42))
 				for (uint16_t i = 0;;)
 				{
 					readWithTimeout(serial_, boost::asio::buffer(&raw_bytes[i + 2], 40),boost::posix_time::seconds( 1 ));
-//					printf("Read finish.\n");
+					//Check sum
+					uint8_t check_sum = 0;
+					for(uint8_t j = 0; j < 40; j++)
+						check_sum += raw_bytes[j + 42 * (i / 42)];
+					check_sum = static_cast<uint8_t>(0xff - check_sum);
+
 //					if (raw_bytes[i] == 0xFA && raw_bytes[i + 1] == (0xA0 + i / 42)) //&& CRC check
-					if (1)
+					if (check_sum == raw_bytes[40 + 42 * (i / 42)] || check_sum == raw_bytes[41 +  42 * (i / 42)])
 					{
 						// ROS_INFO("// pass CRC check");
 						good_sets++;
 						motor_speed += (raw_bytes[i + 3] << 8) + raw_bytes[i + 2]; //accumulate count for avg. time increment
-						rpms_ = (raw_bytes[i + 3] << 8 | raw_bytes[i + 2]) / 10;
+						rpms_ = static_cast<uint16_t>((raw_bytes[i + 3] << 8 | raw_bytes[i + 2]) / 10);
 
-						for (uint16_t j = i + 4; j < i + 40; j = j + 6)
+						for (auto j = static_cast<uint16_t>(i + 4); j < i + 40; j = static_cast<uint16_t>(j + 6))
 						{
 							index = 6 * (i / 42) + (j - 4 - i) / 6;
 
@@ -83,13 +88,15 @@ void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 							else if (block_angle_3_ != -1 && checkWithinRange(index, block_angle_3_, block_range_))
 								scan->ranges[359-index] = std::numeric_limits<float>::infinity();
 							else
-								scan->ranges[359-index] = range / 1000.0;
+								scan->ranges[359-index] = static_cast<float>(range / 1000.0);
 #else
 							scan->ranges[359-index] = range / 1000.0;
 #endif
 							scan->intensities[359-index] = intensity;
 						}
 					}
+					else
+						throw "Check sum crc error!";
 
 					i += 42;
 					if (i < raw_bytes.size())
@@ -98,13 +105,15 @@ void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 										boost::posix_time::seconds(1));
 //						printf("Read finish2[%02x][%02x].\n", raw_bytes[i], raw_bytes[i + 1]);
 
-						if (!(raw_bytes[i] == 0xFA && raw_bytes[i + 1] == (0xA0 + i / 42))) //&& CRC check
-							throw "CRC error!";
+/*						if (!(raw_bytes[i] == 0xFA && raw_bytes[i + 1] == (0xA0 + i / 42))) //&& CRC check
+						{
+							ROS_ERROR("CRC error!");
+						}*/
 					}
 					else
 						break;
 				}
-				scan->time_increment = motor_speed / good_sets / 1e8;
+				scan->time_increment = static_cast<float>(motor_speed / good_sets / 1e8);
 
 				got_scan = true;
 				readSuccess();
