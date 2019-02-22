@@ -1,0 +1,8 @@
+//
+// Created by pierre on 19-2-21.
+//
+
+#ifndef HLS_LFCD_LDS_DRIVER_YDLIDAR_HPP
+#define HLS_LFCD_LDS_DRIVER_YDLIDAR_HPP
+
+#endif //HLS_LFCD_LDS_DRIVER_YDLIDAR_HPP
