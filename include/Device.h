@@ -62,7 +62,7 @@ public:
 	virtual int readLine(int fd, char *buf);
 	virtual bool lidarPmGpio(char cmd);
 	virtual void lidarDataFilter(const sensor_msgs::LaserScan lidarScanData, double delta);
-	virtual void publishScanCompensate(Eigen::MatrixXd lidar_matrix);
+	virtual void publishScanCompensate(Eigen::MatrixXd lidar_matrix, double odom_time_stamp);
 	virtual void updateCompensateLidarMatrix(sensor_msgs::LaserScan lidarScanData_);
 	virtual void delayPub(ros::Publisher *pub_linear, sensor_msgs::LaserScan::Ptr scan_msg);
 	virtual bool checkFresh(int type, int time);

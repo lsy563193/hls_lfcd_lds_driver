@@ -52,6 +52,8 @@ void odomCb(const nav_msgs::Odometry::ConstPtr &msg)
 	laser->now_x_ = msg->pose.pose.position.x;
 	laser->now_y_ = msg->pose.pose.position.y;
 	laser->now_yaw_ = tf::getYaw(msg->pose.pose.orientation);
+//	ROS_INFO("now x: %f", laser->now_x_);
+
 	if (laser->now_yaw_ < 0)
 		laser->now_yaw_ += 2 * M_PI;
 
@@ -83,17 +85,24 @@ void odomCb(const nav_msgs::Odometry::ConstPtr &msg)
 				points_vec.push_back(point);
 		}
 		//publish scan
-		laser->publishScanCompensate(laser->transform_lidar_baselink_.inverse() * laser->lidar_matrix_);
+		laser->publishScanCompensate(laser->transform_lidar_baselink_.inverse() * laser->lidar_matrix_,
+									 msg->header.stamp.toSec());
 		laser->pubPointMarker(&points_vec);
 		laser->scanXY_mutex_.unlock();
 	}
+//	ROS_INFO("cb end");
 }
 
 void *scanCtrlRoutine(void *)
 {
 	pthread_detach(pthread_self());
+	ros::Rate r(100);
 	ROS_INFO("[lds driver] %s %d: scan_ctrl thread is up.", __FUNCTION__, __LINE__);
-	ros::spin();
+	while (ros::ok())
+	{
+		r.sleep();
+		ros::spinOnce();
+	}
 }
 
 int main(int argc, char **argv)
@@ -174,6 +183,9 @@ int main(int argc, char **argv)
 		try
 		{
 			laser->poll(scan);
+//			ROS_INFO("scan.ranges[65] = %.2f", scan->ranges[65]); // Left of robot.
+//			ROS_INFO("scan.ranges[155] = %.2f", scan->ranges[155]); // Back of robot.
+//			ROS_INFO("scan.ranges[245] = %.2f", scan->ranges[245]); // Right of robot.
 			scan->header.stamp = ros::Time::now();
 			std_msgs::UInt16 rpm;
 			rpm.data = laser->rpms_;

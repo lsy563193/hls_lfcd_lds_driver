@@ -105,10 +105,8 @@ void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 										boost::posix_time::seconds(1));
 //						printf("Read finish2[%02x][%02x].\n", raw_bytes[i], raw_bytes[i + 1]);
 
-/*						if (!(raw_bytes[i] == 0xFA && raw_bytes[i + 1] == (0xA0 + i / 42))) //&& CRC check
-						{
-							ROS_ERROR("CRC error!");
-						}*/
+//						if (!(raw_bytes[i] == 0xFA && raw_bytes[i + 1] == (0xA0 + i / 42))) //&& CRC check
+//							throw "CRC error!";
 					}
 					else
 						break;
