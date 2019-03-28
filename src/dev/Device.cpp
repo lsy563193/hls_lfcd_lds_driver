@@ -285,12 +285,13 @@ void Device::lidarDataFilter(const sensor_msgs::LaserScan lidarScanData, double 
 	}
 }
 
-void Device::publishScanCompensate(Eigen::MatrixXd lidar_matrix)
+void Device::publishScanCompensate(Eigen::MatrixXd lidar_matrix, double odom_time_stamp)
 {
 	float angle_min = DEG2RAD(0.0f);
 	float angle_max = DEG2RAD(359.0f);
 	sensor_msgs::LaserScan scan_msg;
-	scan_msg.header.stamp = ros::Time::now();
+//	scan_msg.header.stamp = ros::Time::now();
+	scan_msg.header.stamp = ros::Time(odom_time_stamp);
 	scan_msg.header.frame_id = "laser";
 	if (angle_max > angle_min)
 	{
@@ -351,6 +352,7 @@ void Device::publishScanCompensate(Eigen::MatrixXd lidar_matrix)
 			scan_msg.ranges[i] = std::numeric_limits<float>::infinity();
 	}
 	scan_compensate_pub_.publish(scan_msg);
+//	ROS_INFO("%s %d: Publish compensate at %f.", __FUNCTION__, __LINE__, scan_msg.header.stamp.toSec());
 }
 
 void Device::updateCompensateLidarMatrix(sensor_msgs::LaserScan lidarScanData_)
