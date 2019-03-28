@@ -96,8 +96,13 @@ void odomCb(const nav_msgs::Odometry::ConstPtr &msg)
 void *scanCtrlRoutine(void *)
 {
 	pthread_detach(pthread_self());
+	ros::Rate r(100);
 	ROS_INFO("[lds driver] %s %d: scan_ctrl thread is up.", __FUNCTION__, __LINE__);
-	ros::spin();
+	while (ros::ok())
+	{
+		r.sleep();
+		ros::spinOnce();
+	}
 }
 
 int main(int argc, char **argv)
