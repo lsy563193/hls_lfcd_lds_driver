@@ -287,22 +287,12 @@ void Device::lidarDataFilter(const sensor_msgs::LaserScan lidarScanData, double 
 
 void Device::publishScanCompensate(Eigen::MatrixXd lidar_matrix)
 {
-	float angle_min = DEG2RAD(0.0f);
-	float angle_max = DEG2RAD(359.0f);
 	sensor_msgs::LaserScan scan_msg;
 	scan_msg.header.stamp = ros::Time::now();
 	scan_msg.header.frame_id = "laser";
-	if (angle_max > angle_min)
-	{
-		scan_msg.angle_min = M_PI - angle_max;
-		scan_msg.angle_max = M_PI - angle_min;
-	} else
-	{
-		scan_msg.angle_min = M_PI - angle_min;
-		scan_msg.angle_max = M_PI - angle_max;
-	}
-	scan_msg.angle_increment =
-						(scan_msg.angle_max - scan_msg.angle_min) / (double) (360 - 1);
+	scan_msg.angle_increment = static_cast<float>(2.0 * M_PI / 360.0);
+	scan_msg.angle_min = 0.0;
+	scan_msg.angle_max = static_cast<float>(2.0 * M_PI - scan_msg.angle_increment);
 	scan_msg.range_min = 0.15;
 	scan_msg.range_max = 3.5;
 	scan_msg.intensities.resize(360);
@@ -312,28 +302,25 @@ void Device::publishScanCompensate(Eigen::MatrixXd lidar_matrix)
 	{
 		double x = lidar_matrix(0, i);
 		double y = lidar_matrix(1, i);
-		double distance = sqrt(x * x + y * y);
+		float distance = static_cast<float>(sqrt(x * x + y * y));
 		if (distance < 10)
 		{
 			double angle = atan(y / x) * 180.0 / M_PI;
-			if (angle > 0)
+			if (x > 0 && y > 0)
 			{
-				if (x <= 0)
-				{ //first block
-					angle = fabs(angle) - 1.0;
-				} else
-				{ // third block
-					angle = 179.0 + fabs(angle);
-				}
-			} else
+				angle = fabs(angle) - 1.0;
+			}
+			else if (x < 0 && y > 0)
 			{
-				if (x >= 0)
-				{ //second block
-					angle = 179.0 - fabs(angle);
-				} else
-				{ //forth block
-					angle = 359.0 - fabs(angle);
-				}
+				angle = 179 - fabs(angle);
+			}
+			else if (x < 0 && y < 0)
+			{
+				angle = 179 + fabs(angle);
+			}
+			else
+			{
+				angle = 359 - fabs(angle);
 			}
 			int theta = (int) round(angle);
 			if (theta == (-1))
