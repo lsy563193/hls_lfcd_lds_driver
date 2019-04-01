@@ -356,14 +356,14 @@ void Device::updateCompensateLidarMatrix(sensor_msgs::LaserScan lidarScanData_)
 		lidar_matrix_.col(i) = coordinate;
 	}
 
-	transform_last_ << cos(now_yaw_), sin(now_yaw_), -now_y_ * sin(now_yaw_) - now_x_ * cos(now_yaw_),
+	transform_world_to_baselink_ << cos(now_yaw_), sin(now_yaw_), -now_y_ * sin(now_yaw_) - now_x_ * cos(now_yaw_),
 						-sin(now_yaw_), cos(now_yaw_), now_x_ * sin(now_yaw_) - now_y_ * cos(now_yaw_),
 						0, 0, 1;
 
 //	publishScanCompensate(lidar_matrix_);
-	lidar_matrix_ = transform_lidar_baselink_ * lidar_matrix_; // in base_link coordinate
+	lidar_matrix_ = transform_world_to_baselink_.inverse() * transform_lidar_baselink_ * lidar_matrix_; // in base_link coordinate
 	//publish marker
-	std::vector<Double_Point> points_vec;
+/*	std::vector<Double_Point> points_vec;
 	Double_Point point;
 	std::vector<int>::const_iterator ite = noiseNum_.begin();
 	for (int i = 0; i < lidar_matrix_.cols(); i++)
@@ -378,7 +378,7 @@ void Device::updateCompensateLidarMatrix(sensor_msgs::LaserScan lidarScanData_)
 		if (fabs(point.x) < 20 && fabs(point.y) < 20)
 			points_vec.push_back(point);
 	}
-	pubPointMarker(&points_vec);
+	pubPointMarker(&points_vec);*/
 	scanXY_mutex_.unlock();
 }
 

@@ -67,25 +67,24 @@ void odomCb(const nav_msgs::Odometry::ConstPtr &msg)
 		laser->transform_now_ << cos(laser->now_yaw_), sin(laser->now_yaw_), -laser->now_y_ * sin(laser->now_yaw_) - laser->now_x_ * cos(laser->now_yaw_),
 							-sin(laser->now_yaw_), cos(laser->now_yaw_), laser->now_x_ * sin(laser->now_yaw_) - laser->now_y_ * cos(laser->now_yaw_),
 							0, 0, 1;
-		laser->lidar_matrix_ = laser->transform_now_ * laser->transform_last_.inverse() * laser->lidar_matrix_; // lidar_matrix_ in base_link coordinate
-		laser->transform_last_ = laser->transform_now_;
+		Eigen::MatrixXd now_laser_matrix(laser->transform_now_  * laser->lidar_matrix_); // lidar_matrix_ in base_link coordinate
 		//publish marker
 		Double_Point point{};
 		std::vector<int>::const_iterator ite = laser->noiseNum_.begin();
-		for (int i = 0; i < laser->lidar_matrix_.cols(); i++)
+		for (int i = 0; i < now_laser_matrix.cols(); i++)
 		{
 			if (ite != laser->noiseNum_.end() && i == *ite)
 			{
 				ite++;
 				continue;
 			}
-			point.x = laser->lidar_matrix_(0, i);
-			point.y = laser->lidar_matrix_(1, i);
+			point.x = now_laser_matrix(0, i);
+			point.y = now_laser_matrix(1, i);
 			if (fabs(point.x) < 4 && fabs(point.y) < 4)
 				points_vec.push_back(point);
 		}
 		//publish scan
-		laser->publishScanCompensate(laser->transform_lidar_baselink_.inverse() * laser->lidar_matrix_,
+		laser->publishScanCompensate(laser->transform_lidar_baselink_.inverse() * now_laser_matrix,
 									 msg->header.stamp.toSec());
 		laser->pubPointMarker(&points_vec);
 		laser->scanXY_mutex_.unlock();

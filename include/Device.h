@@ -104,7 +104,7 @@ public:
 	//Store lidar data as Decare coordinate in lidar_matrix_. Which the third dimension is 1.
 	Eigen::MatrixXd lidar_matrix_ = Eigen::Matrix3d::Identity();
 	Eigen::Matrix3d transform_now_ = Eigen::Matrix3d::Identity();
-	Eigen::Matrix3d transform_last_ = Eigen::Matrix3d::Identity();
+	Eigen::Matrix3d transform_world_to_baselink_ = Eigen::Matrix3d::Identity();
 	// Rotation first,then translation
 	Eigen::Matrix3d transform_lidar_baselink_ = Eigen::Matrix3d::Identity();
 
