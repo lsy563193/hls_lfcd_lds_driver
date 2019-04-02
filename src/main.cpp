@@ -147,8 +147,8 @@ int main(int argc, char **argv)
 	auto motor_service = n.advertiseService("/lds/lidar_motor_ctrl", lidarMotorCtrl);
 	ROS_WARN("[lds driver] lidarMotorCtrl service is up.");
 
-	auto scan_ctrl_sub = n.subscribe("/pp/scan_ctrl", 1, &scanCtrlCb);
-	auto odom_sub = n.subscribe("/odom", 2, &odomCb);
+	auto scan_ctrl_sub = n.subscribe("/pp/scan_ctrl", 1, &scanCtrlCb, ros::TransportHints().unreliable());
+	auto odom_sub = n.subscribe("/odom", 2, &odomCb, ros::TransportHints().unreliable());
 
 	nh_private.param<double>("LIDAR_OFFSET_X", laser->LIDAR_OFFSET_X_, 0);
 	nh_private.param<double>("LIDAR_OFFSET_Y", laser->LIDAR_OFFSET_Y_, 0);
