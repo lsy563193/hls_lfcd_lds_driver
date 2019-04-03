@@ -80,18 +80,7 @@ void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 								scan->intensities[359-index] = intensity;
 								continue;
 							}
-#if LIDAR_BLOCK_RANGE_ENABLE
-							if (block_angle_1_ != -1 && checkWithinRange(index, block_angle_1_, block_range_))
-								scan->ranges[359-index] = std::numeric_limits<float>::infinity();
-							else if (block_angle_2_ != -1 && checkWithinRange(index, block_angle_2_, block_range_))
-								scan->ranges[359-index] = std::numeric_limits<float>::infinity();
-							else if (block_angle_3_ != -1 && checkWithinRange(index, block_angle_3_, block_range_))
-								scan->ranges[359-index] = std::numeric_limits<float>::infinity();
-							else
-								scan->ranges[359-index] = static_cast<float>(range / 1000.0);
-#else
 							scan->ranges[359-index] = range / 1000.0;
-#endif
 							scan->intensities[359-index] = intensity;
 						}
 					}

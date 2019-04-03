@@ -68,6 +68,7 @@ public:
 	virtual bool checkFresh(int type, int time);
 	virtual int convertAngleRange(int x);
 	virtual bool checkWithinRange(int i, int start, int range);
+	virtual void blockLidarPoint(sensor_msgs::LaserScan::Ptr scan);
 	virtual void pubPointMarker(std::vector<Double_Point> *point);
 	virtual void checkChangeLidarPower();
 

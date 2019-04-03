@@ -166,14 +166,13 @@ int main(int argc, char **argv)
 	nh_private.param<int>("block_angle_1", laser->block_angle_1_, -1);
 	nh_private.param<int>("block_angle_2", laser->block_angle_2_, -1);
 	nh_private.param<int>("block_angle_3", laser->block_angle_3_, -1);
-	nh_private.param<int>("block_range", laser->block_range_, 15);
+	nh_private.param<int>("block_range", laser->block_range_, 33);
 #endif
 
 	auto tmp_theta = laser->LIDAR_OFFSET_THETA_ * M_PI / 180.0;
 	laser->transform_lidar_baselink_ << cos(tmp_theta), -sin(tmp_theta), laser->LIDAR_OFFSET_X_,
 						sin(tmp_theta), cos(tmp_theta), laser->LIDAR_OFFSET_Y_,
 						0, 0, 1;
-	ROS_WARN("tmp_theta:%.2f",tmp_theta);
 
 	while (ros::ok())
 	{
@@ -197,6 +196,9 @@ int main(int argc, char **argv)
 			std_msgs::UInt16 rpm;
 			rpm.data = laser->rpms_;
 			motor_pub.publish(rpm);
+#if LIDAR_BLOCK_RANGE_ENABLE
+			laser->blockLidarPoint(scan);
+#endif
 			laser->scan_original_pub_.publish(scan);
 			laser->delayPub(&laser->scan_linear_pub_, scan);
 		}

@@ -456,6 +456,22 @@ bool Device::checkWithinRange(int i, int start, int range)
 	}
 	return ret;
 }
+
+void Device::blockLidarPoint(sensor_msgs::LaserScan::Ptr scan)
+{
+	for(int i = 0; i < 360; i++)
+	{
+		int j = static_cast<int>(360 - i - LIDAR_OFFSET_THETA_);
+		j = convertAngleRange(j);
+		if (checkWithinRange(j,block_angle_1_,block_range_) ||
+			checkWithinRange(j,block_angle_2_,block_range_) ||
+			checkWithinRange(j,block_angle_3_,block_range_))
+		{
+			scan->ranges[i] = std::numeric_limits<float>::infinity();
+//			printf("i: %d, j: %d\n", i, j);
+		}
+	}
+}
 #endif
 void Device::pubPointMarker(std::vector<Double_Point> *point)
 {
