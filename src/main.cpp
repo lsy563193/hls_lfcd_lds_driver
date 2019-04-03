@@ -177,13 +177,13 @@ int main(int argc, char **argv)
 
 	while (ros::ok())
 	{
-/*		laser->checkChangeLidarPower();
+		laser->checkChangeLidarPower();
 
 		if (laser->shutting_down_)
 		{
 			usleep(20000);
 			continue;
-		}*/
+		}
 
 		sensor_msgs::LaserScan::Ptr scan(new sensor_msgs::LaserScan);
 		scan->header.frame_id = laser->frame_id_;
