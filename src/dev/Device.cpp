@@ -347,7 +347,7 @@ void Device::updateCompensateLidarMatrix(sensor_msgs::LaserScan lidarScanData_)
 	scanXY_mutex_.lock();
 	Eigen::Vector3d coordinate = Eigen::Vector3d::Zero();
 	lidar_matrix_.resize(3, 360);
-	lidarDataFilter(lidarScanData_, 0.02);
+//	lidarDataFilter(lidarScanData_, 0.02);
 	for (int i = 0; i < 360; i++)
 	{
 		coordinate(0) = cos(i * M_PI / 180.0) * lidarScanData_.ranges[i];

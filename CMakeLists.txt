@@ -4,12 +4,14 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(hls_lfcd_lds_driver)
 set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
+set(SDK_PATH "./sdk/")
 
 FILE(GLOB Laser_SRC
-		src/dev/Device.cpp
-		src/dev/LFCDLaserFirstGen.cpp
-		src/dev/LFCDLaserSecondGen.cpp
-		src/main.cpp
+  src/dev/*.cpp
+  src/ydlidar-sdk/*.cpp
+  src/ydlidar-sdk/*.c
+  src/ydlidar-sdk/impl/unix/*.cpp
+  src/*.cpp
         )
 ################################################################################
 # Find catkin packages and libraries for catkin and system dependencies
@@ -31,11 +33,11 @@ find_package(Eigen3 REQUIRED)
 # Setup for python modules and scripts
 ################################################################################
 add_service_files(FILES
-	SetLidar.srv	
+  SetLidar.srv
 )
 
 add_message_files(FILES
-	scan_ctrl.msg
+  scan_ctrl.msg
 )
 
 Generate_messages(DEPENDENCIES std_msgs sensor_msgs)
@@ -65,8 +67,11 @@ catkin_package(
 ################################################################################
 include_directories(
   include
+  include/ydlidar-sdk
   ${catkin_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
+  ${PROJECT_SOURCE_DIR}/sdk/include
+  ${PROJECT_SOURCE_DIR}/sdk/src
 )
 
 add_executable(hlds_laser_publisher	${Laser_SRC})
