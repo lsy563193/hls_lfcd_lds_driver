@@ -7,6 +7,11 @@
 #include <SecondGenLaser.hpp>
 #include <hls_lfcd_lds_driver/SetLidar.h>
 #include <hls_lfcd_lds_driver/scan_ctrl.h>
+#include "CYdLidar.h"
+#include <signal.h>
+
+using namespace ydlidar;
+
 Device* laser;
 int laserGen = 1;
 
@@ -116,6 +121,8 @@ int main(int argc, char **argv)
 		laser = new LFCDLaserFirstGen(&serial);
 	else if (laserGen == 2)
 		laser = new LFCDLaserSecondGen(&serial);
+	else if(laserGen == 3)
+		laser = new CYdLidar(port);
 	else
 	{
 		ROS_ERROR("[lds driver] Parameter laserGen is wrong! Please input 1 or 2");
@@ -158,16 +165,17 @@ int main(int argc, char **argv)
 	laser->transform_lidar_baselink_ << cos(tmp_theta), -sin(tmp_theta), laser->LIDAR_OFFSET_X_,
 						sin(tmp_theta), cos(tmp_theta), laser->LIDAR_OFFSET_Y_,
 						0, 0, 1;
+	ROS_WARN("tmp_theta:%.2f",tmp_theta);
 
 	while (ros::ok())
 	{
-		laser->checkChangeLidarPower();
+/*		laser->checkChangeLidarPower();
 
 		if (laser->shutting_down_)
 		{
 			usleep(20000);
 			continue;
-		}
+		}*/
 
 		sensor_msgs::LaserScan::Ptr scan(new sensor_msgs::LaserScan);
 		scan->header.frame_id = laser->frame_id_;
@@ -196,6 +204,12 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if(laserGen == 3)
+	{
+		auto ptr = dynamic_cast<CYdLidar*>(laser);
+		ptr->turnOff();
+		ptr->disconnecting();
+	}
 	int retry_count = 1;
 	while(!laser->lidarPmGpio('0') && retry_count < 4)
 	{
