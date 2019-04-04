@@ -1,7 +1,6 @@
 #ifndef LFCD_LASER_H
 #define LFCD_LASER_H
 #define LIDAR_BLOCK_RANGE_ENABLE (1)
-#define DEG2RAD(x) ((x)*M_PI / 180.)
 #define ON true
 #define OFF false
 
