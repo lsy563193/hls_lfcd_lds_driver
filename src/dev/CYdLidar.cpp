@@ -388,8 +388,8 @@ void CYdLidar::poll(sensor_msgs::LaserScan::Ptr scan_msg)
   bool hardError;
   LaserScan scan;
   doProcessSimple(scan, hardError );
-  scan_msg->angle_min = scan.config.min_angle + M_PI / 2;
-  scan_msg->angle_max = scan.config.max_angle + M_PI / 2;
+  scan_msg->angle_min = scan.config.min_angle + 1.8;
+  scan_msg->angle_max = scan.config.max_angle + 1.8;
   scan_msg->angle_increment = scan.config.ang_increment;
   scan_msg->scan_time = scan.config.scan_time;
   scan_msg->time_increment = scan.config.time_increment;
