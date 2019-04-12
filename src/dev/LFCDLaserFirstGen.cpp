@@ -4,31 +4,42 @@
 #include "FirstGenLaser.hpp"
 void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 {
-	uint8_t start_count = 0;
 	bool got_scan = false;
-	boost::array<uint8_t, 2520> raw_bytes;
+	uint16_t package_len = 42;
+	uint16_t package_count_for_one_scan = 60;
+	const int buffer_size = 2520; // = package_count_for_one_scan * package_len
+	boost::array<uint8_t, buffer_size> raw_bytes;
 	uint8_t good_sets = 0;
 	uint32_t motor_speed = 0;
 	rpms_ = 0;
 	int index;
 
+	uint8_t start_angle_index = 0xA0;
+	uint8_t start_angle_index_offset = 24;
+	start_angle_index += start_angle_index_offset;
+
+	uint16_t init_sync_byte_offset = start_angle_index_offset * package_len;
+	uint16_t init_check_angle_byte_offset = init_sync_byte_offset + 1;
+
+	uint16_t read_offset = init_sync_byte_offset;
+
 	while (!shutting_down_ && !got_scan)
 	{
-		// Wait until first data sync of frame: 0xFA, 0xA0
-		readWithTimeout(serial_, boost::asio::buffer(&raw_bytes[start_count], 1),boost::posix_time::seconds( 1 ));
-		if (start_count == 0)
+		// Wait until first data sync of frame: 0xFA, start_angle_index
+		readWithTimeout(serial_, boost::asio::buffer(&raw_bytes[read_offset], 1),boost::posix_time::seconds( 1 ));
+		if (read_offset == init_sync_byte_offset)
 		{
-			if (raw_bytes[start_count] == 0xFA)
+			if (raw_bytes[read_offset] == 0xFA)
 			{
-//				printf("%02x\n", raw_bytes[start_count]);
-				start_count = 1;
+//				printf("FA pass %02x\n", raw_bytes[read_offset]);
+				read_offset = init_check_angle_byte_offset;
 			}
 		}
-		else if (start_count == 1)
+		else if (read_offset == init_check_angle_byte_offset)
 		{
-			if (raw_bytes[start_count] == 0xA0)
+			if (raw_bytes[read_offset] == start_angle_index)
 			{
-//				printf("%02x\n", raw_bytes[start_count]);
+//				printf("Angle pass %02x\n", raw_bytes[read_offset]);
 				scan->angle_increment = static_cast<float>(2.0 * M_PI / 360.0);
 				scan->angle_min = 0.0;
 				scan->angle_max = static_cast<float>(2.0 * M_PI - scan->angle_increment);
@@ -37,14 +48,16 @@ void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 				scan->ranges.resize(360);
 				scan->intensities.resize(360);
 
-				start_count = 0;
 //				readWithTimeout(serial_, boost::asio::buffer(&raw_bytes[2], 2518),boost::posix_time::seconds( 1 ));
 
 				//read data in sets of 6
 //				for (uint16_t i = 0; i < raw_bytes.size(); i = static_cast<uint16_t>(i + 42))
-				for (uint16_t i = 0;;)
+				uint16_t read_pack_count = 0;
+				for (auto i = init_sync_byte_offset;;)
 				{
 					readWithTimeout(serial_, boost::asio::buffer(&raw_bytes[i + 2], 40),boost::posix_time::seconds( 1 ));
+//					printf("Read at %d\n", i + 2);
+					read_pack_count++;
 					//Check sum
 					uint8_t check_sum = 0;
 					for(uint8_t j = 0; j < 40; j++)
@@ -88,7 +101,9 @@ void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 						throw "Check sum crc error!";
 
 					i += 42;
-					if (i < raw_bytes.size())
+					if (i >= raw_bytes.size())
+						i -= raw_bytes.size();
+					if (read_pack_count < package_count_for_one_scan)
 					{
 						readWithTimeout(serial_, boost::asio::buffer(&raw_bytes[i], 2),
 										boost::posix_time::seconds(1));
@@ -107,7 +122,7 @@ void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 			}
 			else
 			{
-				start_count = 0;
+				read_offset = init_sync_byte_offset;
 			}
 		}
 	}
