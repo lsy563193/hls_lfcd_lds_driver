@@ -23,7 +23,7 @@ void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 
 	uint16_t read_offset = init_sync_byte_offset;
 
-	while (!shutting_down_ && !got_scan)
+	while (!got_scan)
 	{
 		// Wait until first data sync of frame: 0xFA, start_angle_index
 		readWithTimeout(serial_, boost::asio::buffer(&raw_bytes[read_offset], 1),boost::posix_time::seconds( 1 ));
@@ -125,5 +125,8 @@ void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 				read_offset = init_sync_byte_offset;
 			}
 		}
+
+		if (shutting_down_)
+			throw "[lds driver] Power off lidar when lidar in poll.";
 	}
 }
