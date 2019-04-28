@@ -87,6 +87,12 @@ void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 							// Last two bytes represent the uncertanty or intensity, might also be pixel area of target...
 							// uint16_t intensity = (byte3 << 8) + byte2;
 							uint16_t range = (byte3 << 8) + byte2;
+
+							if ((359 - index) < 0 || (359 - index) > 359)
+							{
+								ROS_ERROR("%s %d, Warning! Vector index is exceed! Index:%d", __FUNCTION__, __LINE__, index);
+								throw "[lds driver] Warning! Vector index is exceed!";
+							}
 							if(range / 1000.0 < scan->range_min || range / 1000.0 > scan->range_max)
 							{
 								scan->ranges[359-index] = std::numeric_limits<float>::infinity();

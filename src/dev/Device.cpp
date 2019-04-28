@@ -324,10 +324,16 @@ void Device::publishScanCompensate(Eigen::MatrixXd lidar_matrix, double odom_tim
 				angle = 359 - fabs(angle);
 			}
 			int theta = (int) round(angle);
+
 			if (theta == (-1))
 				scan_msg.ranges[0] = distance;
 			else
 			{
+				if (theta < 0 || theta > 359)
+				{
+					ROS_ERROR("%s %d, Warning! Vector index is exceed! Index:%d", __FUNCTION__, __LINE__, theta);
+					return;
+				}
 				scan_msg.ranges[theta] = distance;
 				//				ROS_ERROR("diff:%lf,scan:%lf,lidar:%lf", scan_msg.ranges[theta] - lidarScanData_.ranges[theta], scan_msg.ranges[theta],lidarScanData_.ranges[theta]);
 			}
@@ -336,7 +342,14 @@ void Device::publishScanCompensate(Eigen::MatrixXd lidar_matrix, double odom_tim
 	for (int i = 0; i < scan_msg.ranges.size(); i++)
 	{
 		if (scan_msg.ranges[i] == 0 || scan_msg.ranges[i] > 10)
+		{
+			if (i < 0 || i > 359)
+			{
+				ROS_ERROR("%s %d, Warning! Vector index is exceed! Index:%d", __FUNCTION__, __LINE__, i);
+				return;
+			}
 			scan_msg.ranges[i] = std::numeric_limits<float>::infinity();
+		}
 	}
 	scan_compensate_pub_.publish(scan_msg);
 //	ROS_INFO("%s %d: Publish compensate at %f.", __FUNCTION__, __LINE__, scan_msg.header.stamp.toSec());

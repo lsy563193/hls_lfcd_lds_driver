@@ -12,7 +12,7 @@ void LFCDLaserSecondGen::poll(sensor_msgs::LaserScan::Ptr scan)
 	rpms_ = 0;
 	int index;
 
-	while (!shutting_down_ && !got_scan)
+	while (!got_scan)
 	{
 		// Wait until first data sync of frame: 0xFA, 0xA0
 		readWithTimeout(serial_, boost::asio::buffer(&raw_bytes[start_count], 1), boost::posix_time::seconds( 1 ));
@@ -61,7 +61,11 @@ void LFCDLaserSecondGen::poll(sensor_msgs::LaserScan::Ptr scan)
 
 							// Remaining bits are the range in mm
 							uint16_t range = ((byte1 & 0x3F) << 8) + byte0;
-
+							if ((359 - index) < 0 || (359 - index) > 359)
+							{
+								ROS_ERROR("%s %d, Warning! Vector index is exceed! Index:%d", __FUNCTION__, __LINE__, index);
+								throw "[lds driver] Warning! Vector index is exceed!";
+							}
 							// Last two bytes represent the uncertanty or intensity, might also be pixel area of target...
 							uint16_t intensity = (byte3 << 8) + byte2;
 							if (range / 1000.0 < scan->range_min || range / 1000.0 > scan->range_max)
@@ -82,6 +86,9 @@ void LFCDLaserSecondGen::poll(sensor_msgs::LaserScan::Ptr scan)
 				start_count = 0;
 			}
 		}
+
+		if (shutting_down_)
+			throw "[lds driver] Power off lidar when lidar in poll.";
 	}
 }
 
