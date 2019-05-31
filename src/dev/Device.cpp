@@ -1,6 +1,7 @@
 // // Created by pierre on 18-8-8. //
 #include "Device.h"
 extern int laserGen;
+
 void Device::readWithTimeout(boost::asio::serial_port* s, const boost::asio::mutable_buffers_1 & buffers,
 		const boost::asio::deadline_timer::duration_type& expiry_time)
 {
@@ -238,19 +239,19 @@ bool Device::readSuccess()
 	lidar_stuck_count_ = 0;
 }
 
-void Device::lidarDataFilter(const sensor_msgs::LaserScan lidarScanData, double delta)
+void Device::lidarDataFilter(double delta)
 {
 	noiseNum_.clear();
 	bool isNoiseNow = false;
 	bool isNoiseLast = false;
-	for (int i = 0; i < 360; i++)
+	for (int i = 0; i < p_scan_->ranges.size(); i++)
 	{
 		if (i == 0)
 		{
-			if (fabs(lidarScanData.ranges[359] - lidarScanData.ranges[0]) > delta ||
-					fabs(lidarScanData.ranges[1] - lidarScanData.ranges[0]) > delta)
+			if (fabs(p_scan_->ranges[p_scan_->ranges.size() - 1] - p_scan_->ranges[0]) > delta ||
+					fabs(p_scan_->ranges[1] - p_scan_->ranges[0]) > delta)
 			{
-				//				ROS_WARN("lidarDataNoise[359]:%f,lidarDataNoise[0]:%f,lidarDataNoise[1]:%f",lidarScanData.ranges[359],lidarScanData.ranges[0],lidarScanData.ranges[1]);
+				//				ROS_WARN("lidarDataNoise[359]:%f,lidarDataNoise[0]:%f,lidarDataNoise[1]:%f",p_scan_->ranges[359],p_scan_->ranges[0],p_scan_->ranges[1]);
 				isNoiseNow = true;
 			} else
 			{
@@ -258,10 +259,10 @@ void Device::lidarDataFilter(const sensor_msgs::LaserScan lidarScanData, double 
 			}
 		} else if (i == 359)
 		{
-			if (fabs(lidarScanData.ranges[359] - lidarScanData.ranges[358]) > delta ||
-					fabs(lidarScanData.ranges[359] - lidarScanData.ranges[0]) > delta)
+			if (fabs(p_scan_->ranges[p_scan_->ranges.size() - 1] - p_scan_->ranges[p_scan_->ranges.size() - 2]) > delta ||
+					fabs(p_scan_->ranges[p_scan_->ranges.size() - 1] - p_scan_->ranges[0]) > delta)
 			{
-				//				ROS_WARN("lidarDataNoise[358]:%f,lidarDataNoise[359]:%f,lidarDataNoise[0]:%f",lidarScanData.ranges[358],lidarScanData.ranges[359],lidarScanData.ranges[0]);
+				//				ROS_WARN("lidarDataNoise[358]:%f,lidarDataNoise[359]:%f,lidarDataNoise[0]:%f",p_scan_->ranges[358],p_scan_->ranges[359],p_scan_->ranges[0]);
 				isNoiseNow = true;
 			} else
 			{
@@ -269,10 +270,10 @@ void Device::lidarDataFilter(const sensor_msgs::LaserScan lidarScanData, double 
 			}
 		} else
 		{
-			if (fabs(lidarScanData.ranges[i + 1] - lidarScanData.ranges[i]) > delta ||
-					fabs(lidarScanData.ranges[i - 1] - lidarScanData.ranges[i]) > delta)
+			if (fabs(p_scan_->ranges[i + 1] - p_scan_->ranges[i]) > delta ||
+					fabs(p_scan_->ranges[i - 1] - p_scan_->ranges[i]) > delta)
 			{
-				//				ROS_WARN("lidarDataNoise[%d]:%f,lidarDataNoise[%d]:%f,lidarDataNoise[%d]:%f",i-1,lidarScanData.ranges[i-1],i,lidarScanData.ranges[i],i+1,lidarScanData.ranges[i+1]);
+				//				ROS_WARN("lidarDataNoise[%d]:%f,lidarDataNoise[%d]:%f,lidarDataNoise[%d]:%f",i-1,p_scan_->ranges[i-1],i,p_scan_->ranges[i],i+1,p_scan_->ranges[i+1]);
 				isNoiseNow = true;
 			} else
 			{
@@ -290,15 +291,14 @@ void Device::publishScanCompensate(Eigen::MatrixXd lidar_matrix, double odom_tim
 	sensor_msgs::LaserScan scan_msg;
 //	scan_msg.header.stamp = ros::Time::now();
 	scan_msg.header.stamp = ros::Time(odom_time_stamp);
-	scan_msg.header.frame_id = "laser";
-	scan_msg.angle_increment = static_cast<float>(2.0 * M_PI / 360.0);
-	scan_msg.angle_min = 0.0;
-	scan_msg.angle_max = static_cast<float>(2.0 * M_PI - scan_msg.angle_increment);
-	scan_msg.range_min = 0.15;
-	scan_msg.range_max = 3.5;
-	scan_msg.intensities.resize(360);
-	scan_msg.ranges.resize(360);
-
+	scan_msg.header.frame_id = p_scan_->header.frame_id;
+	scan_msg.angle_increment = p_scan_->angle_increment;
+	scan_msg.angle_min = p_scan_->angle_min;
+	scan_msg.angle_max = p_scan_->angle_max;
+	scan_msg.range_min = p_scan_->range_min;
+	scan_msg.range_max = p_scan_->range_max;
+	scan_msg.intensities.resize(lidar_matrix.cols());
+	scan_msg.ranges.resize(lidar_matrix.cols());
 	for (int i = 0; i < lidar_matrix.cols(); i++)
 	{
 		double x = lidar_matrix(0, i);
@@ -306,7 +306,7 @@ void Device::publishScanCompensate(Eigen::MatrixXd lidar_matrix, double odom_tim
 		float distance = static_cast<float>(sqrt(x * x + y * y));
 		if (distance < 10)
 		{
-			double angle = atan(y / x) * 180.0 / M_PI;
+			double angle = RAD2DEG(atan(y / x));
 			if (x > 0 && y > 0)
 			{
 				angle = fabs(angle) - 1.0;
@@ -343,11 +343,6 @@ void Device::publishScanCompensate(Eigen::MatrixXd lidar_matrix, double odom_tim
 	{
 		if (scan_msg.ranges[i] == 0 || scan_msg.ranges[i] > 10)
 		{
-			if (i < 0 || i > 359)
-			{
-				ROS_ERROR("%s %d, Warning! Vector index is exceed! Index:%d", __FUNCTION__, __LINE__, i);
-				return;
-			}
 			scan_msg.ranges[i] = std::numeric_limits<float>::infinity();
 		}
 	}
@@ -355,16 +350,16 @@ void Device::publishScanCompensate(Eigen::MatrixXd lidar_matrix, double odom_tim
 //	ROS_INFO("%s %d: Publish compensate at %f.", __FUNCTION__, __LINE__, scan_msg.header.stamp.toSec());
 }
 
-void Device::updateCompensateLidarMatrix(sensor_msgs::LaserScan lidarScanData_)
+void Device::updateCompensateLidarMatrix()
 {
 	scanXY_mutex_.lock();
 	Eigen::Vector3d coordinate = Eigen::Vector3d::Zero();
-	lidar_matrix_.resize(3, 360);
-//	lidarDataFilter(lidarScanData_, 0.02);
-	for (int i = 0; i < 360; i++)
+	lidar_matrix_.resize(3, p_scan_->ranges.size());
+//	lidarDataFilter(0.02);
+	for (int i = 0; i < p_scan_->ranges.size(); i++)
 	{
-		coordinate(0) = cos(i * M_PI / 180.0) * lidarScanData_.ranges[i];
-		coordinate(1) = sin(i * M_PI / 180.0) * lidarScanData_.ranges[i];
+		coordinate(0) = std::cos(i * p_scan_->angle_increment) * p_scan_->ranges[i];
+		coordinate(1) = std::sin(i * p_scan_->angle_increment) * p_scan_->ranges[i];
 		coordinate(2) = 1.0;
 		lidar_matrix_.col(i) = coordinate;
 	}
@@ -395,7 +390,7 @@ void Device::updateCompensateLidarMatrix(sensor_msgs::LaserScan lidarScanData_)
 	scanXY_mutex_.unlock();
 }
 
-void Device::delayPub(ros::Publisher *pub_linear, sensor_msgs::LaserScan::Ptr scan_msg)
+void Device::delayPub()
 {
 	if (skip_scan_)
 	{
@@ -406,8 +401,8 @@ void Device::delayPub(ros::Publisher *pub_linear, sensor_msgs::LaserScan::Ptr sc
 	{
 		if (delay_ > delay_when_republish_)
 		{
-			pub_linear->publish(*scan_msg);
-			updateCompensateLidarMatrix(*scan_msg);
+			scan_linear_pub_.publish(*p_scan_);
+			updateCompensateLidarMatrix();
 			scan_update_time_ = ros::Time::now().toSec();
 		}
 		else
@@ -448,7 +443,7 @@ int Device::convertAngleRange(int x)
 
 bool Device::checkWithinRange(int i, int start, int range)
 {
-	if (range == 0)
+	if (range == 0 || (start == -1))
 		return false;
 
 	bool ret = false;
@@ -470,17 +465,27 @@ bool Device::checkWithinRange(int i, int start, int range)
 	return ret;
 }
 
-void Device::blockLidarPoint(sensor_msgs::LaserScan::Ptr scan)
+void Device::blockLidarPoint()
 {
-	for(int i = 0; i < 360; i++)
+/*	int n_first, n_second, n_third;
+	int size;
+	ros::NodeHandle n;
+	n.getParam("n_first", n_first);
+	n.getParam("n_second", n_second);
+	n.getParam("n_third", n_third);
+	n.getParam("size", size);*/
+	for(int i = 0; i < p_scan_->ranges.size(); i++)
 	{
-		int j = static_cast<int>(360 - i - LIDAR_OFFSET_THETA_);
+		int j = std::round(360 - scan_range_start_pos_ - i * RAD2DEG(p_scan_->angle_increment));
 		j = convertAngleRange(j);
 		if (checkWithinRange(j,block_angle_1_,block_range_) ||
 			checkWithinRange(j,block_angle_2_,block_range_) ||
-			checkWithinRange(j,block_angle_3_,block_range_))
+			checkWithinRange(j,block_angle_3_,block_range_) ||
+			checkWithinRange(j,block_angle_4_,block_range_) ||
+			checkWithinRange(j,block_angle_5_,block_range_) ||
+			checkWithinRange(j,block_angle_6_,block_range_))
 		{
-			scan->ranges[i] = std::numeric_limits<float>::infinity();
+			p_scan_->ranges[i] = std::numeric_limits<float>::infinity();
 //			printf("i: %d, j: %d\n", i, j);
 		}
 	}

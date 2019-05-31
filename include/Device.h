@@ -3,6 +3,8 @@
 #define LIDAR_BLOCK_RANGE_ENABLE (1)
 #define ON true
 #define OFF false
+#define RAD2DEG(x) ((x)*180/M_PI)
+#define DEG2RAD(x) ((x)*M_PI/180)
 
 #include <string>
 
@@ -60,14 +62,14 @@ public:
 						(boost::asio::serial_port* s, const boost::asio::mutable_buffers_1 & buffers, const boost::asio::deadline_timer::duration_type& expiry_time);
 	virtual int readLine(int fd, char *buf);
 	virtual bool lidarPmGpio(char cmd);
-	virtual void lidarDataFilter(const sensor_msgs::LaserScan lidarScanData, double delta);
+	virtual void lidarDataFilter(double delta);
 	virtual void publishScanCompensate(Eigen::MatrixXd lidar_matrix, double odom_time_stamp);
-	virtual void updateCompensateLidarMatrix(sensor_msgs::LaserScan lidarScanData_);
-	virtual void delayPub(ros::Publisher *pub_linear, sensor_msgs::LaserScan::Ptr scan_msg);
+	virtual void updateCompensateLidarMatrix();
+	virtual void delayPub();
 	virtual bool checkFresh(int type, int time);
 	virtual int convertAngleRange(int x);
 	virtual bool checkWithinRange(int i, int start, int range);
-	virtual void blockLidarPoint(sensor_msgs::LaserScan::Ptr scan);
+	virtual void blockLidarPoint();
 	virtual void pubPointMarker(std::vector<Double_Point> *point);
 	virtual void checkChangeLidarPower();
 
@@ -85,17 +87,24 @@ public:
 	bool motor_start_flag_{false};
 	bool motor_stop_flag_{true};
 	bool restart_{false};
+	//The degree position of scan.range[0] relative to robot.
+	int scan_range_start_pos_{};
 	//The transform of lidar coordinate to base_link coordinate
 	double LIDAR_OFFSET_X_, LIDAR_OFFSET_Y_, LIDAR_OFFSET_THETA_;
 	std::vector<int> noiseNum_;
 	double scan_update_time_;
 	double odom_update_time_;
 	std::string frame_id_ = "laser";
+	int angle_min_{};
+	int angle_max_{};
 
 #if LIDAR_BLOCK_RANGE_ENABLE
 	int block_angle_1_{};
 	int block_angle_2_{};
 	int block_angle_3_{};
+	int block_angle_4_{};
+	int block_angle_5_{};
+	int block_angle_6_{};
 	int block_range_{};
 #endif
 
@@ -113,5 +122,6 @@ public:
 	ros::Publisher scan_linear_pub_;
 	ros::Publisher scan_original_pub_;
 	ros::Publisher scan_compensate_pub_;
+	sensor_msgs::LaserScan::Ptr p_scan_;
 };
 #endif

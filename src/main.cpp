@@ -51,7 +51,7 @@ void scanCtrlCb(const hls_lfcd_lds_driver::scan_ctrl::ConstPtr &msg)
 
 void odomCb(const nav_msgs::Odometry::ConstPtr &msg)
 {
-	if(laser == nullptr)
+	if(laser == nullptr || laser->p_scan_ == nullptr)
 		return;
 	//update odom position
 	laser->now_x_ = msg->pose.pose.position.x;
@@ -119,8 +119,11 @@ int main(int argc, char **argv)
 	ros::NodeHandle nh_private("~");
 
 	std::string port = "/dev/ttyS1";
+	int angle_min, angle_max;
 	nh_private.param("port", port, std::string("/dev/ttyS1"));
 	nh_private.param<int>("laserGen", laserGen, 1);
+	nh_private.param<int>("angle_min", angle_min, 0);
+	nh_private.param<int>("angle_max", angle_max, 360);
 	boost::asio::io_service io;
 	boost::asio::serial_port serial(io, port);
 
@@ -130,7 +133,7 @@ int main(int argc, char **argv)
 	else if (laserGen == 2)
 		laser = new LFCDLaserSecondGen(&serial);
 	else if(laserGen == 3)
-		laser = new CYdLidar(port);
+		laser = new CYdLidar(port, angle_min, angle_max);
 	else
 	{
 		ROS_ERROR("[lds driver] Parameter laserGen is wrong! Please input 1 or 2");
@@ -166,12 +169,18 @@ int main(int argc, char **argv)
 	nh_private.param<int>("block_angle_1", laser->block_angle_1_, -1);
 	nh_private.param<int>("block_angle_2", laser->block_angle_2_, -1);
 	nh_private.param<int>("block_angle_3", laser->block_angle_3_, -1);
-	nh_private.param<int>("block_range", laser->block_range_, 33);
+	nh_private.param<int>("block_angle_4", laser->block_angle_4_, -1);
+	nh_private.param<int>("block_angle_5", laser->block_angle_5_, -1);
+	nh_private.param<int>("block_angle_6", laser->block_angle_6_, -1);
+	nh_private.param<int>("block_range", laser->block_range_, 0);
 #endif
 
-	auto tmp_theta = laser->LIDAR_OFFSET_THETA_ * M_PI / 180.0;
-	laser->transform_lidar_baselink_ << cos(tmp_theta), -sin(tmp_theta), laser->LIDAR_OFFSET_X_,
-						sin(tmp_theta), cos(tmp_theta), laser->LIDAR_OFFSET_Y_,
+	laser->angle_min_ = angle_min;
+	laser->angle_max_ = angle_max;
+	laser->scan_range_start_pos_ = laser->convertAngleRange(laser->LIDAR_OFFSET_THETA_ + laser->angle_min_);
+	auto scan_range_start_pos_rad = DEG2RAD(laser->scan_range_start_pos_);
+	laser->transform_lidar_baselink_ << cos(scan_range_start_pos_rad), -sin(scan_range_start_pos_rad), laser->LIDAR_OFFSET_X_,
+						sin(scan_range_start_pos_rad), cos(scan_range_start_pos_rad), laser->LIDAR_OFFSET_Y_,
 						0, 0, 1;
 
 	while (ros::ok())
@@ -189,18 +198,19 @@ int main(int argc, char **argv)
 		try
 		{
 			laser->poll(scan);
+			scan->header.stamp = ros::Time::now();
+			laser->p_scan_ = scan;
 //			ROS_INFO("scan.ranges[65] = %.2f", scan->ranges[65]); // Left of robot.
 //			ROS_INFO("scan.ranges[155] = %.2f", scan->ranges[155]); // Back of robot.
 //			ROS_INFO("scan.ranges[245] = %.2f", scan->ranges[245]); // Right of robot.
-			scan->header.stamp = ros::Time::now();
 			std_msgs::UInt16 rpm;
 			rpm.data = laser->rpms_;
 			motor_pub.publish(rpm);
 #if LIDAR_BLOCK_RANGE_ENABLE
-			laser->blockLidarPoint(scan);
+			laser->blockLidarPoint();
 #endif
-			laser->scan_original_pub_.publish(scan);
-			laser->delayPub(&laser->scan_linear_pub_, scan);
+			laser->scan_original_pub_.publish(*laser->p_scan_);
+			laser->delayPub();
 		}
 		//Power off laser when laser is in read data.
 		catch (const char *msg)

@@ -41,8 +41,8 @@ void LFCDLaserFirstGen::poll(sensor_msgs::LaserScan::Ptr scan)
 			{
 //				printf("Angle pass %02x\n", raw_bytes[read_offset]);
 				scan->angle_increment = static_cast<float>(2.0 * M_PI / 360.0);
-				scan->angle_min = 0.0;
-				scan->angle_max = static_cast<float>(2.0 * M_PI - scan->angle_increment);
+				scan->angle_min = DEG2RAD(angle_min_);
+				scan->angle_max = DEG2RAD(angle_max_);
 				scan->range_min = 0.12;
 				scan->range_max = 3.5;
 				scan->ranges.resize(360);

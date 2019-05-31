@@ -32,9 +32,9 @@ void LFCDLaserSecondGen::poll(sensor_msgs::LaserScan::Ptr scan)
 				readWithTimeout(serial_, boost::asio::buffer(&raw_bytes[2], 1978), boost::posix_time::seconds(1));
 				got_scan = true;
 				readSuccess();
-				scan->angle_min = 0.0;
 				scan->angle_increment = (2.0 * M_PI / 360.0);
-				scan->angle_max = 2.0 * M_PI - scan->angle_increment;
+				scan->angle_min = DEG2RAD(angle_min_);
+				scan->angle_max = DEG2RAD(angle_max_);
 				scan->range_min = 0.12;
 				scan->range_max = 5.0;
 				scan->ranges.resize(360);
