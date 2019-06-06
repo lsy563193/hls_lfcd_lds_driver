@@ -184,7 +184,7 @@ bool  CYdLidar::doProcessSimple(LaserScan &outscan, bool &hardwareError) {
         }
 
         if (range > m_MaxRange || range < m_MinRange) {
-          range = 0.0;
+          range = std::numeric_limits<float>::infinity();
         }
 
         int pos = index - node_start ;

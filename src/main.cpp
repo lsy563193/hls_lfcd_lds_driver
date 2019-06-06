@@ -85,7 +85,8 @@ void odomCb(const nav_msgs::Odometry::ConstPtr &msg)
 			}
 			point.x = now_laser_matrix(0, i);
 			point.y = now_laser_matrix(1, i);
-			if (fabs(point.x) < 4 && fabs(point.y) < 4)
+			auto distance = std::sqrt(std::pow(point.x, 2) + std::pow(point.y, 2));
+			if (distance > laser->p_scan_->range_min && distance < laser->p_scan_->range_max)
 				points_vec.push_back(point);
 		}
 		//publish scan
