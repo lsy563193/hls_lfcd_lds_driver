@@ -163,7 +163,7 @@ int main(int argc, char **argv)
 
 	nh_private.param<double>("LIDAR_OFFSET_X", laser->LIDAR_OFFSET_X_, 0);
 	nh_private.param<double>("LIDAR_OFFSET_Y", laser->LIDAR_OFFSET_Y_, 0);
-	nh_private.param<double>("LIDAR_OFFSET_THETA", laser->LIDAR_OFFSET_THETA_, 0);
+//	nh_private.param<double>("LIDAR_OFFSET_THETA", laser->LIDAR_OFFSET_THETA_, 0);
 	nh_private.param<int>("delay_when_republish", laser->delay_when_republish_, 1);
 	nh_private.param("frame_id", laser->frame_id_, std::string("laser"));
 #if LIDAR_BLOCK_RANGE_ENABLE
@@ -175,6 +175,24 @@ int main(int argc, char **argv)
 	nh_private.param<int>("block_angle_6", laser->block_angle_6_, -1);
 	nh_private.param<int>("block_range", laser->block_range_, 0);
 #endif
+
+	int load_calibration_try_count{0};
+	while (!n.getParam("/pp/laser_calibration_angle_degree", laser->LIDAR_OFFSET_THETA_) && load_calibration_try_count < 5)
+	{
+		usleep(20000);
+		load_calibration_try_count++;
+	}
+	if (load_calibration_try_count == 5)
+	{
+		if(!laser->loadLaserCalibration())
+		{
+			ROS_ERROR("Laser there is no laser calibration in ros parameter server and laser calibration file!");
+			return false;
+		}
+		ROS_INFO("Laser driver load laser calibration from calibration file succeed. Calibration angle: %.4f", laser->LIDAR_OFFSET_THETA_);
+	}
+	else
+		ROS_INFO("Laser driver load laser calibration from parameter server succeed. Calibration angle: %.4f", laser->LIDAR_OFFSET_THETA_);
 
 	laser->angle_min_ = angle_min;
 	laser->angle_max_ = angle_max;

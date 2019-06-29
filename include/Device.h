@@ -62,6 +62,7 @@ public:
 						(boost::asio::serial_port* s, const boost::asio::mutable_buffers_1 & buffers, const boost::asio::deadline_timer::duration_type& expiry_time);
 	virtual int readLine(int fd, char *buf);
 	virtual bool lidarPmGpio(char cmd);
+	bool loadLaserCalibration();
 	virtual void lidarDataFilter(double delta);
 	virtual void publishScanCompensate(Eigen::MatrixXd lidar_matrix, double odom_time_stamp);
 	virtual void updateCompensateLidarMatrix();

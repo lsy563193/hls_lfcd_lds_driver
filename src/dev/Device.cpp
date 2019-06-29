@@ -1,6 +1,7 @@
 // // Created by pierre on 18-8-8. //
 #include "Device.h"
 extern int laserGen;
+const std::string laser_calibration_file = "/opt/ros/indigo/share/pp/laser_calibration";
 
 void Device::readWithTimeout(boost::asio::serial_port* s, const boost::asio::mutable_buffers_1 & buffers,
 		const boost::asio::deadline_timer::duration_type& expiry_time)
@@ -114,6 +115,24 @@ bool Device::lidarPmGpio(char cmd)
 		startMotor();
 	ROS_WARN("[lds driver] %s %d: Command: %c, Response: '%s'.", __FUNCTION__, __LINE__, cmd, r_buf);
 	return r_buf[25] == r_val;
+}
+
+bool Device::loadLaserCalibration()
+{
+	ROS_INFO("Start load laser calibration file.");
+	FILE *f_read = fopen(laser_calibration_file.c_str(), "r");
+	if (f_read == nullptr)
+	{
+		ROS_ERROR("Open %s error.", laser_calibration_file.c_str());
+		return false;
+	} else
+	{
+		if (fscanf(f_read, "Laser calibration angle degree: %.4f\n", &LIDAR_OFFSET_THETA_) != 1)
+			ROS_ERROR("Read laser calibration angle degree error!");
+		fclose(f_read);
+	}
+	ROS_INFO("Load laser calibration file succeed.");
+	return true;
 }
 
 int  Device::readLine(int fd, char *buf)
