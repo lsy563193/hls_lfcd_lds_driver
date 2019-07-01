@@ -91,7 +91,7 @@ public:
 	//The degree position of scan.range[0] relative to robot.
 	int scan_range_start_pos_{};
 	//The transform of lidar coordinate to base_link coordinate
-	double LIDAR_OFFSET_X_, LIDAR_OFFSET_Y_, LIDAR_OFFSET_THETA_;
+	double LIDAR_OFFSET_X_, LIDAR_OFFSET_Y_, LIDAR_OFFSET_THETA_{25};
 	std::vector<int> noiseNum_;
 	double scan_update_time_;
 	double odom_update_time_;

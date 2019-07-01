@@ -176,6 +176,7 @@ int main(int argc, char **argv)
 	nh_private.param<int>("block_range", laser->block_range_, 0);
 #endif
 
+/*
 	int load_calibration_try_count{0};
 	while (!n.getParam("/pp/laser_calibration_angle_degree", laser->LIDAR_OFFSET_THETA_) && load_calibration_try_count < 5)
 	{
@@ -193,6 +194,7 @@ int main(int argc, char **argv)
 	}
 	else
 		ROS_INFO("Laser driver load laser calibration from parameter server succeed. Calibration angle: %.4f", laser->LIDAR_OFFSET_THETA_);
+*/
 
 	laser->angle_min_ = angle_min;
 	laser->angle_max_ = angle_max;
@@ -205,6 +207,15 @@ int main(int argc, char **argv)
 	while (ros::ok())
 	{
 		laser->checkChangeLidarPower();
+		if (laser->first_power_on_)
+		{
+			if (!n.getParam("/pp/laser_calibration_angle_degree", laser->LIDAR_OFFSET_THETA_))
+			{
+				ROS_WARN("[lds driver] %s %d: Failed to get param /pp/laser_calibration_angle_degree", __FUNCTION__,
+						__LINE__);
+				laser->LIDAR_OFFSET_THETA_ = 25;
+			}
+		}
 
 		if (laser->shutting_down_)
 		{
