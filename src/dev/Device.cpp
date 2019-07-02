@@ -117,24 +117,6 @@ bool Device::lidarPmGpio(char cmd)
 	return r_buf[25] == r_val;
 }
 
-bool Device::loadLaserCalibration()
-{
-	ROS_INFO("Start load laser calibration file.");
-	FILE *f_read = fopen(laser_calibration_file.c_str(), "r");
-	if (f_read == nullptr)
-	{
-		ROS_ERROR("Open %s error.", laser_calibration_file.c_str());
-		return false;
-	} else
-	{
-		if (fscanf(f_read, "Laser calibration angle degree: %.4f\n", &LIDAR_OFFSET_THETA_) != 1)
-			ROS_ERROR("Read laser calibration angle degree error!");
-		fclose(f_read);
-	}
-	ROS_INFO("Load laser calibration file succeed.");
-	return true;
-}
-
 int  Device::readLine(int fd, char *buf)
 {
 	char temp;
@@ -493,9 +475,12 @@ void Device::blockLidarPoint()
 	n.getParam("n_second", n_second);
 	n.getParam("n_third", n_third);
 	n.getParam("size", size);*/
-	for(int i = 0; i < p_scan_->ranges.size(); i++)
+	for (int i = 0; i < p_scan_->ranges.size(); i++)
 	{
-		int j = std::round(360 - scan_range_start_pos_ - i * RAD2DEG(p_scan_->angle_increment));
+		// j stands for ranges[i] is at j degree direction of robot.
+		auto j = static_cast<int>(std::round(RAD2DEG(p_scan_->angle_min) + i * RAD2DEG(p_scan_->angle_increment) +
+					lidar_to_baselink_transform_rotation_degree));
+
 		j = convertAngleRange(j);
 		if (checkWithinRange(j,block_angle_1_,block_range_) ||
 			checkWithinRange(j,block_angle_2_,block_range_) ||

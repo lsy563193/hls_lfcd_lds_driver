@@ -62,7 +62,6 @@ public:
 						(boost::asio::serial_port* s, const boost::asio::mutable_buffers_1 & buffers, const boost::asio::deadline_timer::duration_type& expiry_time);
 	virtual int readLine(int fd, char *buf);
 	virtual bool lidarPmGpio(char cmd);
-	bool loadLaserCalibration();
 	virtual void lidarDataFilter(double delta);
 	virtual void publishScanCompensate(Eigen::MatrixXd lidar_matrix, double odom_time_stamp);
 	virtual void updateCompensateLidarMatrix();
@@ -88,14 +87,10 @@ public:
 	bool motor_start_flag_{false};
 	bool motor_stop_flag_{true};
 	bool restart_{false};
-	//The degree position of scan.range[0] relative to robot.
-	int scan_range_start_pos_{};
-	//The transform of lidar coordinate to base_link coordinate
-	double LIDAR_OFFSET_X_, LIDAR_OFFSET_Y_, LIDAR_OFFSET_THETA_{25};
+	double lidar_to_baselink_transform_rotation_degree{};
 	std::vector<int> noiseNum_;
 	double scan_update_time_;
 	double odom_update_time_;
-	std::string frame_id_ = "laser";
 	int angle_min_{};
 	int angle_max_{};
 

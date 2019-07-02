@@ -161,11 +161,13 @@ int main(int argc, char **argv)
 	auto scan_ctrl_sub = n.subscribe("/pp/scan_ctrl", 1, &scanCtrlCb, ros::TransportHints().unreliable());
 	auto odom_sub = n.subscribe("/odom", 2, &odomCb, ros::TransportHints().unreliable());
 
-	nh_private.param<double>("LIDAR_OFFSET_X", laser->LIDAR_OFFSET_X_, 0);
-	nh_private.param<double>("LIDAR_OFFSET_Y", laser->LIDAR_OFFSET_Y_, 0);
-//	nh_private.param<double>("LIDAR_OFFSET_THETA", laser->LIDAR_OFFSET_THETA_, 0);
 	nh_private.param<int>("delay_when_republish", laser->delay_when_republish_, 1);
-	nh_private.param("frame_id", laser->frame_id_, std::string("laser"));
+
+	std::string frame_id;
+	std::string robot_frame_id;
+	nh_private.param("frame_id", frame_id, std::string("laser"));
+	nh_private.param("robot_frame_id", robot_frame_id, std::string("base_link"));
+
 #if LIDAR_BLOCK_RANGE_ENABLE
 	nh_private.param<int>("block_angle_1", laser->block_angle_1_, -1);
 	nh_private.param<int>("block_angle_2", laser->block_angle_2_, -1);
@@ -176,46 +178,17 @@ int main(int argc, char **argv)
 	nh_private.param<int>("block_range", laser->block_range_, 0);
 #endif
 
-/*
-	int load_calibration_try_count{0};
-	while (!n.getParam("/pp/laser_calibration_angle_degree", laser->LIDAR_OFFSET_THETA_) && load_calibration_try_count < 5)
-	{
-		usleep(20000);
-		load_calibration_try_count++;
-	}
-	if (load_calibration_try_count == 5)
-	{
-		if(!laser->loadLaserCalibration())
-		{
-			ROS_ERROR("Laser there is no laser calibration in ros parameter server and laser calibration file!");
-			return false;
-		}
-		ROS_INFO("Laser driver load laser calibration from calibration file succeed. Calibration angle: %.4f", laser->LIDAR_OFFSET_THETA_);
-	}
-	else
-		ROS_INFO("Laser driver load laser calibration from parameter server succeed. Calibration angle: %.4f", laser->LIDAR_OFFSET_THETA_);
-*/
-
 	laser->angle_min_ = angle_min;
 	laser->angle_max_ = angle_max;
-	laser->scan_range_start_pos_ = laser->convertAngleRange(laser->LIDAR_OFFSET_THETA_ + laser->angle_min_);
-	auto scan_range_start_pos_rad = DEG2RAD(laser->scan_range_start_pos_);
-	laser->transform_lidar_baselink_ << cos(scan_range_start_pos_rad), -sin(scan_range_start_pos_rad), laser->LIDAR_OFFSET_X_,
-						sin(scan_range_start_pos_rad), cos(scan_range_start_pos_rad), laser->LIDAR_OFFSET_Y_,
-						0, 0, 1;
+
+	tf2_ros::Buffer tf_buffer;
+	tf2_ros::TransformListener listener(tf_buffer, n);
+	//The transform from lidar coordinate to base_link coordinate
+	geometry_msgs::TransformStamped trans_laser_to_base_link;
 
 	while (ros::ok())
 	{
 		laser->checkChangeLidarPower();
-		if (laser->first_power_on_)
-		{
-			if (!n.getParam("/pp/laser_calibration_angle_degree", laser->LIDAR_OFFSET_THETA_))
-			{
-				ROS_WARN("[lds driver] %s %d: Failed to get param /pp/laser_calibration_angle_degree", __FUNCTION__,
-						__LINE__);
-				laser->LIDAR_OFFSET_THETA_ = 25;
-			}
-		}
 
 		if (laser->shutting_down_)
 		{
@@ -223,8 +196,34 @@ int main(int argc, char **argv)
 			continue;
 		}
 
+		if (laser->first_power_on_)
+		{
+			try
+			{
+				trans_laser_to_base_link = tf_buffer.lookupTransform(robot_frame_id, frame_id, ros::Time(0));
+				ROS_INFO("[lds driver] %s %d: trans_laser_to_base_link(%lf, %lf, %lf)", __FUNCTION__, __LINE__,
+						trans_laser_to_base_link.transform.translation.x,
+						trans_laser_to_base_link.transform.translation.y,
+						trans_laser_to_base_link.transform.translation.z);
+			} catch (tf2::TransformException &ex)
+			{
+				ROS_WARN("[lds driver] %s %d, %s", __FUNCTION__, __LINE__, ex.what());
+				usleep(20000);
+				continue;
+			}
+
+			auto rad = tf::getYaw(trans_laser_to_base_link.transform.rotation);
+			ROS_INFO("[lds driver] %s %d: lidar_to_baselink_transform_rotation_degree: %.2f", __FUNCTION__, __LINE__,
+					RAD2DEG(rad));
+			laser->transform_lidar_baselink_ <<
+					cos(rad), -sin(rad), trans_laser_to_base_link.transform.translation.x,
+					sin(rad), cos(rad), trans_laser_to_base_link.transform.translation.y,
+					0, 0, 1;
+			laser->lidar_to_baselink_transform_rotation_degree = RAD2DEG(rad);
+		}
+
 		sensor_msgs::LaserScan::Ptr scan(new sensor_msgs::LaserScan);
-		scan->header.frame_id = laser->frame_id_;
+		scan->header.frame_id = frame_id;
 		try
 		{
 			laser->poll(scan);
