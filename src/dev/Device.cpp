@@ -117,24 +117,6 @@ bool Device::lidarPmGpio(char cmd)
 	return r_buf[25] == r_val;
 }
 
-bool Device::loadLaserCalibration()
-{
-	ROS_INFO("Start load laser calibration file.");
-	FILE *f_read = fopen(laser_calibration_file.c_str(), "r");
-	if (f_read == nullptr)
-	{
-		ROS_ERROR("Open %s error.", laser_calibration_file.c_str());
-		return false;
-	} else
-	{
-		if (fscanf(f_read, "Laser calibration angle degree: %lf\n", &LIDAR_OFFSET_THETA_) != 1)
-			ROS_ERROR("Read laser calibration angle degree error!");
-		fclose(f_read);
-	}
-	ROS_INFO("Load laser calibration file succeed.");
-	return true;
-}
-
 int  Device::readLine(int fd, char *buf)
 {
 	char temp;
