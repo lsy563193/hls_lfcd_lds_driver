@@ -127,7 +127,7 @@ bool Device::loadLaserCalibration()
 		return false;
 	} else
 	{
-		if (fscanf(f_read, "Laser calibration angle degree: %.4f\n", &LIDAR_OFFSET_THETA_) != 1)
+		if (fscanf(f_read, "Laser calibration angle degree: %lf\n", &LIDAR_OFFSET_THETA_) != 1)
 			ROS_ERROR("Read laser calibration angle degree error!");
 		fclose(f_read);
 	}
