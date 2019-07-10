@@ -331,22 +331,22 @@ void Device::publishScanCompensate(Eigen::MatrixXd lidar_matrix, double odom_tim
 				scan_msg.ranges[0] = distance;
 			else
 			{
-				if (theta < 0 || theta > scan_msg.ranges.size())
+				if (theta < 0 || theta >= scan_msg.ranges.size())
 				{
 					ROS_ERROR("%s %d, Warning! Vector index is exceed! Index: %d, vector size: %zu",
 							  __FUNCTION__, __LINE__, theta, scan_msg.ranges.size());
 					return;
 				}
-				scan_msg.ranges[theta] = distance;
+				scan_msg.ranges.at(theta) = distance;
 				//				ROS_ERROR("diff:%lf,scan:%lf,lidar:%lf", scan_msg.ranges[theta] - lidarScanData_.ranges[theta], scan_msg.ranges[theta],lidarScanData_.ranges[theta]);
 			}
 		}
 	}
 	for (int i = 0; i < scan_msg.ranges.size(); i++)
 	{
-		if (scan_msg.ranges[i] == 0 || scan_msg.ranges[i] > 10)
+		if (scan_msg.ranges.at(i) == 0 || scan_msg.ranges.at(i) > 10)
 		{
-			scan_msg.ranges[i] = std::numeric_limits<float>::infinity();
+			scan_msg.ranges.at(i) = std::numeric_limits<float>::infinity();
 		}
 	}
 	scan_compensate_pub_.publish(scan_msg);
@@ -361,8 +361,8 @@ void Device::updateCompensateLidarMatrix()
 //	lidarDataFilter(0.02);
 	for (int i = 0; i < p_scan_->ranges.size(); i++)
 	{
-		coordinate(0) = std::cos(i * p_scan_->angle_increment) * p_scan_->ranges[i];
-		coordinate(1) = std::sin(i * p_scan_->angle_increment) * p_scan_->ranges[i];
+		coordinate(0) = std::cos(i * p_scan_->angle_increment) * p_scan_->ranges.at(i);
+		coordinate(1) = std::sin(i * p_scan_->angle_increment) * p_scan_->ranges.at(i);
 		coordinate(2) = 1.0;
 		lidar_matrix_.col(i) = coordinate;
 	}
@@ -492,7 +492,7 @@ void Device::blockLidarPoint()
 			checkWithinRange(j,block_angle_5_,block_range_) ||
 			checkWithinRange(j,block_angle_6_,block_range_))
 		{
-			p_scan_->ranges[i] = std::numeric_limits<float>::infinity();
+			p_scan_->ranges.at(i) = std::numeric_limits<float>::infinity();
 //			printf("i: %d, j: %d\n", i, j);
 		}
 	}
