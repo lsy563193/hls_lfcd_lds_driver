@@ -104,6 +104,7 @@ public:
 	int block_range_{};
 #endif
 
+	bool has_init_lidar_matrix_{false};
 	//Robot coordinate(x,y,yaw)
 	double now_x_, now_y_, now_yaw_;
 	//Store lidar data as Decare coordinate in lidar_matrix_. Which the third dimension is 1.

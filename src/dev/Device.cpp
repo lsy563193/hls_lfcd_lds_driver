@@ -169,6 +169,7 @@ void Device::checkChangeLidarPower()
 	if (motor_stop_flag_)
 	{
 		motor_stop_flag_ = false;
+		has_init_lidar_matrix_ = false;
 		int retry_count = 1;
 		while (!lidarPmGpio('0') && retry_count < 4)
 		{
@@ -330,9 +331,10 @@ void Device::publishScanCompensate(Eigen::MatrixXd lidar_matrix, double odom_tim
 				scan_msg.ranges[0] = distance;
 			else
 			{
-				if (theta < 0 || theta > 359)
+				if (theta < 0 || theta > scan_msg.ranges.size())
 				{
-					ROS_ERROR("%s %d, Warning! Vector index is exceed! Index:%d", __FUNCTION__, __LINE__, theta);
+					ROS_ERROR("%s %d, Warning! Vector index is exceed! Index: %d, vector size: %zu",
+							  __FUNCTION__, __LINE__, theta, scan_msg.ranges.size());
 					return;
 				}
 				scan_msg.ranges[theta] = distance;
@@ -388,6 +390,7 @@ void Device::updateCompensateLidarMatrix()
 			points_vec.push_back(point);
 	}
 	pubPointMarker(&points_vec);*/
+	has_init_lidar_matrix_ = true;
 	scanXY_mutex_.unlock();
 }
 

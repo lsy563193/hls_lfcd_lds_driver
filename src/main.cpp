@@ -51,7 +51,7 @@ void scanCtrlCb(const hls_lfcd_lds_driver::scan_ctrl::ConstPtr &msg)
 
 void odomCb(const nav_msgs::Odometry::ConstPtr &msg)
 {
-	if(laser == nullptr || laser->p_scan_ == nullptr)
+	if(laser == nullptr || laser->p_scan_ == nullptr || laser->has_init_lidar_matrix_ == false)
 		return;
 	//update odom position
 	laser->now_x_ = msg->pose.pose.position.x;
